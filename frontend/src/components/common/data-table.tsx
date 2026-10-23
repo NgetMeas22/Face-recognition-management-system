@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useI18n } from "@/lib/i18n";
 
 // Client-side sorting, global search and pagination. Module scope keeps it stable across renders.
 export const dataTableFeatures = tableFeatures({
@@ -57,12 +58,13 @@ export function DataTable<TData extends RowData>({
   columns,
   data,
   isLoading = false,
-  searchPlaceholder = "Search…",
+  searchPlaceholder,
   emptyState,
   pageSize = 10,
   caption,
   toolbar,
 }: DataTableProps<TData>) {
+  const { isKhmer, t } = useI18n();
   const table = useTable({
     features: dataTableFeatures,
     columns,
@@ -78,29 +80,31 @@ export function DataTable<TData extends RowData>({
   const from = total === 0 ? 0 : pageIndex * size + 1;
   const to = Math.min(total, (pageIndex + 1) * size);
 
+  const placeholder = searchPlaceholder ?? `${t.common.search}…`;
+
   return (
     <div className="space-y-3">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
         <div className="relative w-full sm:max-w-xs">
           <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
           <Input
             value={filter}
             onChange={(e) => table.setGlobalFilter(e.target.value)}
-            placeholder={searchPlaceholder}
+            placeholder={placeholder}
             aria-label={`Search ${caption}`}
-            className="pl-8"
+            className="pl-8 h-9 text-xs sm:text-sm"
             disabled={isLoading || data.length === 0}
           />
         </div>
         {toolbar && <div className="flex flex-wrap gap-2 sm:ml-auto">{toolbar}</div>}
       </div>
 
-      <div className="overflow-x-auto rounded-lg border bg-card">
+      <div className="overflow-x-auto rounded-xl border border-border/80 bg-card shadow-xs">
         <Table>
           <caption className="sr-only">{caption}</caption>
-          <TableHeader>
+          <TableHeader className="bg-muted/40">
             {table.getHeaderGroups().map((group) => (
-              <TableRow key={group.id}>
+              <TableRow key={group.id} className="hover:bg-transparent">
                 {group.headers.map((header) => {
                   const sorted = header.column.getIsSorted();
                   const canSort = header.column.getCanSort();
@@ -108,21 +112,22 @@ export function DataTable<TData extends RowData>({
                     <TableHead
                       key={header.id}
                       aria-sort={sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : undefined}
+                      className="font-semibold text-xs tracking-wider uppercase text-muted-foreground"
                     >
                       {header.isPlaceholder ? null : canSort ? (
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="-ml-2 h-8 px-2"
+                          className="-ml-2 h-8 px-2 font-semibold text-xs uppercase"
                           onClick={header.column.getToggleSortingHandler()}
                         >
                           <table.FlexRender header={header} />
                           {sorted === "asc" ? (
-                            <ArrowUp aria-hidden />
+                            <ArrowUp className="size-3.5" aria-hidden />
                           ) : sorted === "desc" ? (
-                            <ArrowDown aria-hidden />
+                            <ArrowDown className="size-3.5" aria-hidden />
                           ) : (
-                            <ArrowUpDown className="opacity-40" aria-hidden />
+                            <ArrowUpDown className="size-3.5 opacity-40" aria-hidden />
                           )}
                         </Button>
                       ) : (
@@ -147,9 +152,9 @@ export function DataTable<TData extends RowData>({
               ))
             ) : rows.length > 0 ? (
               rows.map((row) => (
-                <TableRow key={row.id}>
+                <TableRow key={row.id} className="transition-colors hover:bg-muted/30">
                   {row.getAllCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id} className="py-2.5 text-xs sm:text-sm">
                       <table.FlexRender cell={cell} />
                     </TableCell>
                   ))}
@@ -157,8 +162,12 @@ export function DataTable<TData extends RowData>({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-32 text-center text-sm text-muted-foreground">
-                  {filter ? `No results for “${filter}”.` : (emptyState ?? "No records yet.")}
+                <TableCell colSpan={columns.length} className="h-32 text-center text-xs sm:text-sm text-muted-foreground">
+                  {filter
+                    ? isKhmer
+                      ? `រកមិនឃើញលទ្ធផលសម្រាប់ “${filter}” ទេ។`
+                      : `No results for “${filter}”.`
+                    : (emptyState ?? t.common.noData)}
                 </TableCell>
               </TableRow>
             )}
@@ -166,29 +175,39 @@ export function DataTable<TData extends RowData>({
         </Table>
       </div>
 
-      <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
-        <p aria-live="polite">{total === 0 ? "0 results" : `${from}–${to} of ${total}`}</p>
-        <div className="flex items-center gap-1">
+      <div className="flex items-center justify-between gap-2 text-xs sm:text-sm text-muted-foreground px-1">
+        <p aria-live="polite">
+          {total === 0
+            ? isKhmer
+              ? "គ្មានទិន្នន័យ"
+              : "0 results"
+            : isKhmer
+            ? `បង្ហាញ ${from}–${to} នៃសរុប ${total}`
+            : `${from}–${to} of ${total}`}
+        </p>
+        <div className="flex items-center gap-1.5">
           <Button
             variant="outline"
-            size="icon-sm"
+            size="icon"
+            className="size-7"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
             aria-label="Previous page"
           >
-            <ChevronLeft aria-hidden />
+            <ChevronLeft className="size-3.5" aria-hidden />
           </Button>
-          <span className="px-2 tabular-nums">
+          <span className="px-2 text-xs font-medium tabular-nums">
             {table.getPageCount() === 0 ? 0 : pageIndex + 1} / {table.getPageCount()}
           </span>
           <Button
             variant="outline"
-            size="icon-sm"
+            size="icon"
+            className="size-7"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
             aria-label="Next page"
           >
-            <ChevronRight aria-hidden />
+            <ChevronRight className="size-3.5" aria-hidden />
           </Button>
         </div>
       </div>

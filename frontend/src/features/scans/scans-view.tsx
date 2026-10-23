@@ -1,13 +1,15 @@
 "use client";
 
 import { createColumnHelper } from "@tanstack/react-table";
+import { useMemo } from "react";
 
 import { OutcomeLegend } from "@/components/camera/outcome-legend";
 import { DataTable, type DataTableFeatures } from "@/components/common/data-table";
 import { PageHeader } from "@/components/common/page-header";
 import { PlannedFeature } from "@/components/common/planned-feature";
+import { Badge } from "@/components/ui/badge";
+import { useI18n } from "@/lib/i18n";
 
-// Shape of planned scan decisions (docs/02-database-schema.md `scan_events`). No images are stored.
 type ScanRow = {
   created_at: string;
   mode: "LIVE" | "UPLOAD";
@@ -17,30 +19,92 @@ type ScanRow = {
   scanned_by: string;
 };
 
-const helper = createColumnHelper<DataTableFeatures, ScanRow>();
-const columns = [
-  helper.accessor("created_at", { header: "Time" }),
-  helper.accessor("mode", { header: "Mode" }),
-  helper.accessor("outcome", { header: "Outcome" }),
-  helper.accessor("score", { header: "Score" }),
-  helper.accessor("person", { header: "Matched person" }),
-  helper.accessor("scanned_by", { header: "Operator" }),
-];
 const NO_ROWS: ScanRow[] = [];
 
 export function ScansView() {
+  const { isKhmer, t } = useI18n();
+
+  const columns = useMemo(() => {
+    const helper = createColumnHelper<DataTableFeatures, ScanRow>();
+    return [
+      helper.accessor("created_at", {
+        header: t.scans.colTime,
+        cell: (info) => <span className="font-mono text-xs">{info.getValue()}</span>,
+      }),
+      helper.accessor("mode", {
+        header: t.scans.colMode,
+        cell: (info) => (
+          <Badge variant="outline" className="text-[11px] font-normal">
+            {info.getValue() === "LIVE" ? t.scans.modeLive : t.scans.modeUpload}
+          </Badge>
+        ),
+      }),
+      helper.accessor("outcome", {
+        header: t.scans.colOutcome,
+        cell: (info) => {
+          const outcome = info.getValue();
+          return (
+            <Badge
+              variant="outline"
+              className={
+                outcome === "MATCH"
+                  ? "border-success/30 bg-success/10 text-success text-[11px]"
+                  : outcome === "REVIEW"
+                  ? "border-warning/40 bg-warning/15 text-warning-foreground dark:text-warning text-[11px]"
+                  : "border-destructive/30 bg-destructive/10 text-destructive text-[11px]"
+              }
+            >
+              {outcome === "MATCH"
+                ? t.scanner.match
+                : outcome === "REVIEW"
+                ? t.scanner.needsReview
+                : t.scanner.noMatch}
+            </Badge>
+          );
+        },
+      }),
+      helper.accessor("score", {
+        header: t.scans.colScore,
+        cell: (info) => {
+          const score = info.getValue();
+          return score !== null ? <span className="font-mono text-xs font-semibold">{score.toFixed(2)}</span> : "—";
+        },
+      }),
+      helper.accessor("person", {
+        header: t.scans.colPerson,
+        cell: (info) => info.getValue() ?? (isKhmer ? "គ្មាន (មិនស្គាល់)" : "Unknown"),
+      }),
+      helper.accessor("scanned_by", {
+        header: t.scans.colOperator,
+        cell: (info) => <code className="font-mono text-xs">@{info.getValue()}</code>,
+      }),
+    ];
+  }, [isKhmer, t]);
+
   return (
-    <>
+    <div className="space-y-6">
       <PageHeader
-        title="Scan History"
-        description="Every recognition decision, including unknown faces. Only scores and outcomes are kept — never the image or embedding."
+        title={t.scans.title}
+        description={t.scans.subtitle}
         availability="planned"
       />
+
       <div className="space-y-4">
-        <PlannedFeature phase="Phase 4" endpoints={["GET /scan/events?outcome=&from=&to=&page="]} />
         <OutcomeLegend />
-        <DataTable caption="Scan events" columns={columns} data={NO_ROWS} emptyState="No scan events — the scan API is not implemented yet." />
+
+        <PlannedFeature phase="Phase 4" endpoints={["GET /scan/events?outcome=&from=&to=&page="]}>
+          {isKhmer
+            ? "ប្រវត្តិស្កេនផ្ទៃមុខ និងការសម្រេចចិត្តទាំងអស់នឹងបង្ហាញនៅទីនេះពេល Scan Event API ត្រូវបានបើកដំណើរការ។"
+            : "Every facial verification event will be recorded in this audit stream once the Scan events backend is connected."}
+        </PlannedFeature>
+
+        <DataTable
+          caption={t.scans.title}
+          columns={columns}
+          data={NO_ROWS}
+          emptyState={t.scans.emptyScans}
+        />
       </div>
-    </>
+    </div>
   );
 }

@@ -2,15 +2,16 @@
 
 import { createColumnHelper } from "@tanstack/react-table";
 import { Plus } from "lucide-react";
+import { useMemo } from "react";
 
 import { RequirePermission } from "@/components/auth/require-permission";
 import { DataTable, type DataTableFeatures } from "@/components/common/data-table";
 import { PageHeader } from "@/components/common/page-header";
-import { PlannedFeature } from "@/components/common/planned-feature";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n";
 import { Perm } from "@/lib/permissions";
 
-// Shape of the planned people list (docs/02-database-schema.md `people`); no API serves it yet.
 type PersonRow = {
   person_code: string;
   full_name: string;
@@ -20,45 +21,76 @@ type PersonRow = {
   status: "ACTIVE" | "INACTIVE" | "ARCHIVED";
 };
 
-const helper = createColumnHelper<DataTableFeatures, PersonRow>();
-const columns = [
-  helper.accessor("person_code", { header: "ID" }),
-  helper.accessor("full_name", { header: "Name" }),
-  helper.accessor("person_type", { header: "Type" }),
-  helper.accessor("department", { header: "Department / class" }),
-  helper.accessor("position", { header: "Position / grade" }),
-  helper.accessor("status", { header: "Status" }),
-];
 const NO_ROWS: PersonRow[] = [];
 
 export function PeopleView() {
+  const { t } = useI18n();
+
+  const columns = useMemo(() => {
+    const helper = createColumnHelper<DataTableFeatures, PersonRow>();
+    return [
+      helper.accessor("person_code", {
+        header: t.people.colId,
+        cell: (info) => <code className="font-mono text-xs font-semibold">{info.getValue()}</code>,
+      }),
+      helper.accessor("full_name", {
+        header: t.people.colName,
+        cell: (info) => <span className="font-medium text-foreground">{info.getValue()}</span>,
+      }),
+      helper.accessor("person_type", {
+        header: t.people.colType,
+        cell: (info) => (
+          <Badge variant="outline" className="text-[11px] font-normal">
+            {info.getValue() === "EMPLOYEE" ? t.people.employee : t.people.student}
+          </Badge>
+        ),
+      }),
+      helper.accessor("department", {
+        header: t.people.colDepartment,
+        cell: (info) => info.getValue() ?? "—",
+      }),
+      helper.accessor("position", {
+        header: t.people.colPosition,
+        cell: (info) => info.getValue() ?? "—",
+      }),
+      helper.accessor("status", {
+        header: t.people.colStatus,
+        cell: (info) => {
+          const val = info.getValue();
+          return (
+            <Badge
+              variant={val === "ACTIVE" ? "secondary" : "outline"}
+              className={val === "ACTIVE" ? "text-success border-success/30 bg-success/10 text-[11px]" : "text-[11px]"}
+            >
+              {val === "ACTIVE" ? t.common.active : val === "INACTIVE" ? t.common.inactive : t.common.archived}
+            </Badge>
+          );
+        },
+      }),
+    ];
+  }, [t]);
+
   return (
-    <>
+    <div className="space-y-4">
       <PageHeader
-        title="Employees & Students"
-        description="Search, filter and manage the people who can be enrolled for recognition."
-        availability="planned"
+        title={t.people.title}
+        description={t.people.subtitle}
         actions={
           <RequirePermission requires={{ all: [Perm.PEOPLE_WRITE] }} fallback={null}>
-            <Button disabled>
-              <Plus aria-hidden /> Add person
+            <Button size="sm" disabled className="h-8 gap-1.5 text-xs font-semibold">
+              <Plus className="size-3.5" aria-hidden /> {t.people.addPerson}
             </Button>
           </RequirePermission>
         }
       />
-      <div className="space-y-4">
-        <PlannedFeature
-          phase="Phase 3"
-          endpoints={["GET /people?search=&department_id=&status=&type=&sort=&page=&size=", "POST /people", "GET /people/{id}", "PATCH /people/{id}"]}
-        />
-        <DataTable
-          caption="Employees and students"
-          columns={columns}
-          data={NO_ROWS}
-          searchPlaceholder="Search by name or ID…"
-          emptyState="No people to show — the people API is not implemented yet."
-        />
-      </div>
-    </>
+
+      <DataTable
+        caption={t.people.title}
+        columns={columns}
+        data={NO_ROWS}
+        searchPlaceholder={t.people.searchPlaceholder}
+        emptyState={t.people.emptyPeople}
+      />
+    </div>
   );
 }

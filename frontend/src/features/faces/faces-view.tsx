@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, ShieldCheck, Upload, UserRound } from "lucide-react";
+import { CheckCircle2, ShieldCheck, Trash2, Upload, UserRound } from "lucide-react";
 
 import { CameraPanel } from "@/components/camera/camera-panel";
 import { ImageDropzone } from "@/components/camera/image-dropzone";
@@ -12,119 +12,182 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useImageList } from "@/hooks/use-image-list";
+import { useI18n } from "@/lib/i18n";
 
 const MAX_IMAGES = 5;
-const TIPS = [
-  "One person per image, facing the camera",
-  "Even, front lighting — avoid strong backlight",
-  "Add slight left/right angles for better matching",
-  "Remove sunglasses; keep the face uncovered",
-];
 
 function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-3" aria-labelledby={`step-${n}`}>
-      <h2 id={`step-${n}`} className="flex items-center gap-2 text-sm font-semibold">
-        <span className="flex size-6 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">{n}</span>
+      <h2 id={`step-${n}`} className="flex items-center gap-2.5 text-xs sm:text-sm font-semibold text-foreground">
+        <span className="flex size-5 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground shadow-xs">
+          {n}
+        </span>
         {title}
       </h2>
-      {children}
+      <div className="pl-7">{children}</div>
     </section>
   );
 }
 
 export function FacesView() {
   const images = useImageList(MAX_IMAGES);
+  const { isKhmer, t } = useI18n();
+
+  const tips = [t.faces.tip1, t.faces.tip2, t.faces.tip3, t.faces.tip4];
 
   return (
-    <>
+    <div className="space-y-6">
       <PageHeader
-        title="Face Registration"
-        description="Register 3–5 approved face images for a person who has given recorded consent. Only encrypted embeddings are stored; the images themselves are discarded."
+        title={t.faces.title}
+        description={t.faces.subtitle}
         availability="partial"
       />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-        <Card>
-          <CardContent className="space-y-8 pt-6">
-            <Step n={1} title="Choose the person">
+        <Card className="border-border/80 shadow-xs">
+          <CardHeader className="pb-4 border-b border-border/40">
+            <CardTitle className="text-base font-semibold">{t.faces.title}</CardTitle>
+            <CardDescription className="text-xs">{t.faces.subtitle}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6 pt-6">
+            <Step n={1} title={t.faces.step1}>
               <Select disabled>
-                <SelectTrigger className="w-full sm:w-80" aria-label="Person">
-                  <UserRound aria-hidden />
-                  <SelectValue placeholder="People API not available yet" />
+                <SelectTrigger className="w-full sm:w-80 h-9 text-xs" aria-label="Person">
+                  <UserRound className="size-4 text-muted-foreground mr-1.5" aria-hidden />
+                  <SelectValue placeholder={t.faces.selectPerson} />
                 </SelectTrigger>
                 <SelectContent />
               </Select>
             </Step>
 
-            <Step n={2} title="Confirm biometric consent">
-              <p className="flex items-start gap-2 text-sm text-muted-foreground">
-                <ShieldCheck className="mt-0.5 size-4 shrink-0" aria-hidden />
-                Enrollment is refused unless the person&apos;s latest consent record is GRANTED. Declining must not disadvantage anyone.
-              </p>
-            </Step>
-
-            <Step n={3} title={`Capture or upload images (${images.items.length}/${MAX_IMAGES})`}>
-              <Progress value={(images.items.length / MAX_IMAGES) * 100} aria-label="Images collected" />
-              <CameraPanel
-                captureLabel="Add frame"
-                captureDisabled={images.isFull}
-                onCapture={({ blob, width, height }) =>
-                  images.add({ blob, width, height, source: "camera", name: `capture-${images.items.length + 1}.jpg` })
-                }
-              />
-              <ImageDropzone
-                multiple
-                disabled={images.isFull}
-                onImage={(img) => images.add({ blob: img.file, width: img.width, height: img.height, source: "upload", name: img.name })}
-              />
-              {images.items.length > 0 && (
-                <ul className="grid grid-cols-3 gap-3 sm:grid-cols-5" aria-label="Collected images" data-testid="collected-images">
-                  {images.items.map((img, i) => (
-                    <li key={img.id}>
-                      <ImageThumb image={img} index={i} onRemove={() => images.remove(img.id)} />
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </Step>
-
-            <Step n={4} title="Submit for quality check and approval">
-              <div className="flex flex-wrap gap-2">
-                <Button disabled>
-                  <Upload aria-hidden /> Submit {images.items.length || ""} image{images.items.length === 1 ? "" : "s"}
-                </Button>
-                <Button variant="outline" onClick={images.clear} disabled={images.items.length === 0}>
-                  Clear
-                </Button>
+            <Step n={2} title={t.faces.step2}>
+              <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
+                <p className="flex items-start gap-2 text-xs text-muted-foreground">
+                  <ShieldCheck className="mt-0.5 size-4 shrink-0 text-success" aria-hidden />
+                  <span>{t.faces.consentNotice}</span>
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">Images stay in this tab and are discarded when you leave the page.</p>
+            </Step>
+
+            <Step n={3} title={`${t.faces.step3} (${images.items.length}/${MAX_IMAGES})`}>
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <Progress value={(images.items.length / MAX_IMAGES) * 100} className="h-2 flex-1" aria-label="Images collected" />
+                  <span className="text-xs font-semibold tabular-nums text-muted-foreground">
+                    {images.items.length} / {MAX_IMAGES}
+                  </span>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-foreground">{t.scanner.liveCamera}</p>
+                    <CameraPanel
+                      captureLabel={t.faces.addFrame}
+                      captureDisabled={images.isFull}
+                      onCapture={({ blob, width, height }) =>
+                        images.add({ blob, width, height, source: "camera", name: `capture-${images.items.length + 1}.jpg` })
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-foreground">{t.scanner.uploadImage}</p>
+                    <ImageDropzone
+                      multiple
+                      disabled={images.isFull}
+                      onImage={(img) =>
+                        images.add({ blob: img.file, width: img.width, height: img.height, source: "upload", name: img.name })
+                      }
+                    />
+                  </div>
+                </div>
+
+                {images.items.length > 0 && (
+                  <div className="space-y-2 pt-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold text-muted-foreground">{t.faces.collectedImages}</p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={images.clear}
+                        className="h-7 text-xs text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="size-3 mr-1" />
+                        {t.faces.clearAll}
+                      </Button>
+                    </div>
+                    <ul className="grid grid-cols-3 gap-2 sm:grid-cols-5" aria-label="Collected images" data-testid="collected-images">
+                      {images.items.map((img, i) => (
+                        <li key={img.id}>
+                          <ImageThumb image={img} index={i} onRemove={() => images.remove(img.id)} />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </Step>
+
+            <Step n={4} title={t.faces.step4}>
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button disabled className="h-8 gap-1.5 text-xs font-semibold">
+                    <Upload className="size-3.5" aria-hidden />
+                    {t.faces.submitApproval} ({images.items.length})
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={images.clear}
+                    disabled={images.items.length === 0}
+                    className="h-8 text-xs"
+                  >
+                    {t.common.clear}
+                  </Button>
+                </div>
+                <p className="text-[11px] text-muted-foreground">{t.faces.privacyNote}</p>
+              </div>
             </Step>
           </CardContent>
         </Card>
 
+        {/* Guidelines and Planned Info Sidebar */}
         <div className="space-y-4">
-          <PlannedFeature
-            phase="Phases 3–4"
-            endpoints={["GET /people", "POST /people/{id}/consents", "POST /people/{id}/faces", "POST /faces/{id}/approve"]}
-          />
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Capture tips</CardTitle>
-              <CardDescription>Better images mean fewer false non-matches.</CardDescription>
+          <Card className="border-border/80 shadow-xs">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold">{t.faces.tipsTitle}</CardTitle>
+              <CardDescription className="text-xs">
+                {isKhmer ? "រូបថតច្បាស់បង្កើនប្រសិទ្ធភាពនៃការស្គាល់មុខ" : "Optimizes biometric feature extraction."}
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <ul className="space-y-2 text-sm">
-                {TIPS.map((tip) => (
-                  <li key={tip} className="flex gap-2">
-                    <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-success" aria-hidden /> {tip}
+              <ul className="space-y-2 text-xs text-muted-foreground">
+                {tips.map((tip, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-success" aria-hidden />
+                    <span>{tip}</span>
                   </li>
                 ))}
               </ul>
             </CardContent>
           </Card>
+
+          <PlannedFeature
+            phase="Phases 3–4"
+            endpoints={[
+              "GET /people",
+              "POST /people/{id}/consents",
+              "POST /people/{id}/faces",
+              "POST /faces/{id}/approve",
+            ]}
+          >
+            {isKhmer
+              ? "ការថត និងជ្រើសរើសរូបថតដំណើរការរួចរាល់ហើយ។ ការបញ្ជូនទិន្នន័យដើម្បីទាញយក Biometric Embeddings នឹងដំណើរការពេល Faces API រួចរាល់។"
+              : "Frame capture and local validation are active. Enrollment submission will link once Face Embeddings endpoints are deployed."}
+          </PlannedFeature>
         </div>
       </div>
-    </>
+    </div>
   );
 }

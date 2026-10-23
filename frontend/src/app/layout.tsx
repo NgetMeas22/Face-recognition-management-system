@@ -5,6 +5,7 @@ import { AuthProvider } from "@/components/auth/auth-provider";
 import { ThemeProvider } from "@/components/layout/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { I18nProvider } from "@/lib/i18n";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-sans", subsets: ["latin"] });
@@ -27,10 +28,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <TooltipProvider delayDuration={200}>
-            <AuthProvider>{children}</AuthProvider>
-          </TooltipProvider>
-          <Toaster richColors closeButton position="top-right" />
+          <I18nProvider>
+            <TooltipProvider delayDuration={200}>
+              <AuthProvider>{children}</AuthProvider>
+            </TooltipProvider>
+            <Toaster richColors closeButton position="top-right" />
+          </I18nProvider>
         </ThemeProvider>
       </body>
     </html>

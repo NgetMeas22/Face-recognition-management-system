@@ -19,6 +19,9 @@ export const metadata: Metadata = {
   title: { default: "FaceTrack AI", template: "%s · FaceTrack AI" },
   description: "Face recognition & people management dashboard",
   robots: { index: false, follow: false },
+  // The app has its own English/Khmer UI. Browser translators (Chrome's Google Translate) rewrite
+  // text nodes behind React's back, which crashes re-renders with "removeChild" errors.
+  other: { google: "notranslate" },
 };
 
 // Every locale is known at build time, so /en/... and /km/... prerender as static shells.
@@ -35,6 +38,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
   return (
     <html
       lang={locale}
+      translate="no"
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} ${notoKhmer.variable} h-full antialiased`}
     >

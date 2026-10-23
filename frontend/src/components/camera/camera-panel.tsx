@@ -95,11 +95,11 @@ export function CameraPanel({
       <div className="flex flex-wrap items-center gap-2">
         {active ? (
           <Button variant="outline" onClick={stop}>
-            <CameraOff aria-hidden /> Stop camera
+            <CameraOff aria-hidden /> <span>Stop camera</span>
           </Button>
         ) : (
           <Button onClick={() => void start()} disabled={status === "requesting"} data-testid="start-camera">
-            <Camera aria-hidden /> {status === "error" ? "Try again" : "Start camera"}
+            <Camera aria-hidden /> <span>{status === "error" ? "Try again" : "Start camera"}</span>
           </Button>
         )}
         <Button variant="secondary" onClick={() => void handleCapture()} disabled={!active || captureDisabled} data-testid="capture-frame">

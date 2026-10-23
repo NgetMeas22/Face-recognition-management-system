@@ -6,6 +6,7 @@ import { configureAuthHandlers, setAccessToken } from "@/lib/api/client";
 import { api } from "@/lib/api/endpoints";
 import type { ApiError } from "@/lib/api/errors";
 import type { LoginRequest, Me, TokenResponse } from "@/lib/api/types";
+import { hardNavigate } from "@/lib/hard-navigate";
 import { satisfies, type PermissionCode, type PermissionRequirement } from "@/lib/permissions";
 
 type AuthStatus = "loading" | "authenticated" | "anonymous";
@@ -27,7 +28,7 @@ const CHANNEL = "facetrack-auth";
 // Refresh this long before the access token expires.
 const REFRESH_MARGIN_MS = 60_000;
 
-function loginUrl(reason?: string): string {
+function loginUrl(reason?: string): `/${string}` {
   const params = new URLSearchParams();
   if (reason) params.set("reason", reason);
   const query = params.toString();
@@ -107,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     bc.onmessage = (event: MessageEvent<{ type: string }>) => {
       if (event.data?.type === "logout") {
         setAccessToken(null);
-        window.location.assign(loginUrl());
+        hardNavigate(loginUrl());
       }
     };
     return () => {
@@ -140,8 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     setAccessToken(null);
     channel.current?.postMessage({ type: "logout" });
-    // A full navigation discards every in-memory page, so no previous user's data stays mounted.
-    window.location.assign(loginUrl(reason));
+    hardNavigate(loginUrl(reason));
   }, []);
 
   const permissions = useMemo(() => new Set(user?.permissions ?? []), [user]);

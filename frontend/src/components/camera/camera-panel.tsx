@@ -26,15 +26,15 @@ export function CameraPanel({
   captureDisabled?: boolean;
   showScanOverlay?: boolean;
 }) {
-  const camera = useCamera();
+  const { videoRef, status, error, devices, deviceId, start, stop, capture } = useCamera();
   const [captureError, setCaptureError] = useState<string | null>(null);
   const selectId = useId();
-  const active = camera.status === "active";
+  const active = status === "active";
 
   async function handleCapture() {
     setCaptureError(null);
     try {
-      onCapture(await camera.capture());
+      onCapture(await capture());
     } catch (err) {
       setCaptureError(err instanceof Error ? err.message : "Could not capture the frame.");
     }
@@ -45,7 +45,7 @@ export function CameraPanel({
       <div className="relative aspect-video overflow-hidden rounded-xl border bg-muted" data-testid="camera-preview">
         {/* Mirrored like a selfie view; captured frames are not mirrored. */}
         <video
-          ref={camera.videoRef}
+          ref={videoRef}
           className={cn("size-full -scale-x-100 object-cover", !active && "invisible")}
           playsInline
           muted
@@ -59,7 +59,7 @@ export function CameraPanel({
         )}
         {!active && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-6 text-center text-sm text-muted-foreground">
-            {camera.status === "requesting" ? (
+            {status === "requesting" ? (
               <>
                 <Loader2 className="size-8 animate-spin" aria-hidden />
                 <p>Waiting for camera permission…</p>
@@ -79,11 +79,11 @@ export function CameraPanel({
         )}
       </div>
 
-      {camera.error && (
+      {error && (
         <Alert variant="destructive" role="alert">
           <CameraOff aria-hidden />
           <AlertTitle>Camera unavailable</AlertTitle>
-          <AlertDescription>{camera.error.message}</AlertDescription>
+          <AlertDescription>{error.message}</AlertDescription>
         </Alert>
       )}
       {captureError && (
@@ -94,28 +94,28 @@ export function CameraPanel({
 
       <div className="flex flex-wrap items-center gap-2">
         {active ? (
-          <Button variant="outline" onClick={camera.stop}>
+          <Button variant="outline" onClick={stop}>
             <CameraOff aria-hidden /> Stop camera
           </Button>
         ) : (
-          <Button onClick={() => void camera.start()} disabled={camera.status === "requesting"} data-testid="start-camera">
-            <Camera aria-hidden /> {camera.status === "error" ? "Try again" : "Start camera"}
+          <Button onClick={() => void start()} disabled={status === "requesting"} data-testid="start-camera">
+            <Camera aria-hidden /> {status === "error" ? "Try again" : "Start camera"}
           </Button>
         )}
         <Button variant="secondary" onClick={() => void handleCapture()} disabled={!active || captureDisabled} data-testid="capture-frame">
           {captureLabel}
         </Button>
-        {active && camera.devices.length > 1 && (
+        {active && devices.length > 1 && (
           <div className="flex items-center gap-2 sm:ml-auto">
             <label htmlFor={selectId} className="sr-only">
               Camera
             </label>
-            <Select value={camera.deviceId} onValueChange={(id) => void camera.start(id)}>
+            <Select value={deviceId} onValueChange={(id) => void start(id)}>
               <SelectTrigger id={selectId} className="w-56" aria-label="Choose camera">
                 <SelectValue placeholder="Choose camera" />
               </SelectTrigger>
               <SelectContent>
-                {camera.devices.map((device, i) => (
+                {devices.map((device, i) => (
                   <SelectItem key={device.deviceId || i} value={device.deviceId}>
                     {device.label || `Camera ${i + 1}`}
                   </SelectItem>

@@ -32,7 +32,11 @@ class User(IdMixin, TimestampMixin, Base):
 
 
 class UserSession(IdMixin, CreatedAtMixin, Base):
-    """A refresh-token session. Only the SHA-256 hash of the token is stored."""
+    """One refresh token in a sign-in's rotation family. Only the token's SHA-256 hash is stored.
+
+    rotated_at: this refresh token was exchanged for a new one. Presenting it again means theft.
+    revoked_at: the sign-in ended (logout, password change, reuse). Access tokens tied to it die.
+    """
 
     __tablename__ = "user_sessions"
     __table_args__ = TABLE_ARGS
@@ -41,6 +45,7 @@ class UserSession(IdMixin, CreatedAtMixin, Base):
     token_hash: Mapped[str] = mapped_column(String(64), unique=True)
     family_id: Mapped[str] = mapped_column(String(36), index=True)
     expires_at: Mapped[datetime] = mapped_column(UTCDateTime)
+    rotated_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
     revoked_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
     ip_address: Mapped[str | None] = mapped_column(String(45))
     user_agent: Mapped[str | None] = mapped_column(String(255))

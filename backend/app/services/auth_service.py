@@ -147,7 +147,9 @@ def refresh(db: Session, raw_refresh: str | None, ctx: RequestContext) -> Issued
 
     now = utcnow()
     if session.revoked_at is not None:
-        # A rotated-out token was presented again: assume theft and end the whole family.
+        raise AuthenticationError(INVALID_SESSION, code="INVALID_SESSION")
+    if session.rotated_at is not None:
+        # A rotated-out token was presented again: assume theft and end the whole sign-in.
         _revoke_family(db, session.family_id)
         audit_service.record(
             db, "auth.refresh_reuse", entity_type="user", entity_id=session.user_id,
@@ -158,20 +160,22 @@ def refresh(db: Session, raw_refresh: str | None, ctx: RequestContext) -> Issued
 
     user = get_user_with_role(db, session.user_id)
     if session.expires_at <= now or user is None or not user.is_active:
-        session.revoked_at = now
+        _revoke_family(db, session.family_id)
         db.commit()
         raise AuthenticationError(INVALID_SESSION, code="INVALID_SESSION")
 
-    session.revoked_at = now
+    # The old row stays un-revoked so access tokens issued from it keep working until they expire.
+    session.rotated_at = now
     tokens = _open_session(db, user, ctx, family_id=session.family_id)
     db.commit()
     return tokens
 
 
 def logout(db: Session, user: User, session_id: int, ctx: RequestContext) -> None:
+    """Ends the whole sign-in: every access and refresh token from this login stops working."""
     session = db.get(UserSession, session_id)
-    if session is not None and session.revoked_at is None:
-        session.revoked_at = utcnow()
+    if session is not None:
+        _revoke_family(db, session.family_id)
     audit_service.record(db, "auth.logout", entity_type="user", entity_id=user.id, actor_user_id=user.id, ctx=ctx)
     db.commit()
 

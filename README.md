@@ -12,12 +12,16 @@ identifying **enrolled, consenting** people from a webcam scan or an uploaded ph
 | Phase | Scope | Status |
 |------|-------|--------|
 | 1 | Architecture, folder structure, database schema, recognition workflow | **Done (design docs)** |
-| 2 | Backend setup, DB connection, Alembic migrations, JWT auth + RBAC | Not started |
+| 2 | Backend setup, DB connection, Alembic migrations, JWT auth + RBAC | **Done**: see [backend/README.md](backend/README.md) (60 tests passing) |
 | 3 | People / department CRUD APIs | Not started |
 | 4 | Face enrollment, encrypted templates, recognition API | Not started |
 | 5 | React + TypeScript + Tailwind frontend | Not started |
 | 6 | Attendance, reports, audit logs, security hardening | Not started |
 | 7 | End-to-end testing, threshold calibration, deployment docs | Not started |
+
+## Quick start
+
+Backend setup, startup and testing commands for Windows: **[backend/README.md](backend/README.md)**.
 
 ## Design documents (Phase 1)
 

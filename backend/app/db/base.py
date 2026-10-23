@@ -27,16 +27,16 @@ class Base(DeclarativeBase):
 
 
 class IdMixin:
-    id: Mapped[int] = mapped_column(BigId, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(BigId, primary_key=True, autoincrement=True, sort_order=-100)
 
 
 class CreatedAtMixin:
     created_at: Mapped[datetime] = mapped_column(
-        UTCDateTime, default=utcnow, server_default=text("CURRENT_TIMESTAMP(6)")
+        UTCDateTime, default=utcnow, server_default=text("CURRENT_TIMESTAMP(6)"), sort_order=100
     )
 
 
 class TimestampMixin(CreatedAtMixin):
     updated_at: Mapped[datetime] = mapped_column(
-        UTCDateTime, default=utcnow, onupdate=utcnow, server_default=text("CURRENT_TIMESTAMP(6)")
+        UTCDateTime, default=utcnow, onupdate=utcnow, server_default=text("CURRENT_TIMESTAMP(6)"), sort_order=100
     )

@@ -122,9 +122,10 @@ erDiagram
 | id | BIGINT PK | |
 | user_id | FK → users.id ON DELETE CASCADE, **ix** | |
 | token_hash | CHAR(64) **UNIQUE** | SHA-256 of the opaque refresh token. The raw token is never stored. |
-| family_id | CHAR(36), **ix** | Rotation family. If a revoked token is reused, the whole family is revoked. |
+| family_id | CHAR(36), **ix** | One sign-in. All rows created by rotating that sign-in's refresh token share it. |
 | expires_at | DATETIME(6) | |
-| revoked_at | DATETIME(6) NULL | |
+| rotated_at | DATETIME(6) NULL | The token was exchanged for a new one. Presenting it again is treated as theft, and the family is revoked. Access tokens issued from this row stay valid until they expire. |
+| revoked_at | DATETIME(6) NULL | The sign-in ended (logout, password change, reuse, expiry). Access tokens for this row are rejected immediately. |
 | ip_address | VARCHAR(45) | |
 | user_agent | VARCHAR(255) | |
 | created_at | DATETIME(6) | |

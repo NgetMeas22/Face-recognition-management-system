@@ -36,7 +36,6 @@ class Settings(BaseSettings):
     jwt_issuer: str = "facetrack-api"
     access_token_minutes: int = Field(default=15, ge=1, le=120)
     refresh_token_days: int = Field(default=7, ge=1, le=90)
-    refresh_cookie_name: str = "ft_refresh"
     cookie_secure: bool = False
 
     # Login protection

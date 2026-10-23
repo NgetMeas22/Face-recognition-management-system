@@ -14,6 +14,7 @@ from app.services.auth_service import IssuedTokens
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+REFRESH_COOKIE_NAME = "ft_refresh"
 REFRESH_COOKIE_PATH = "/api/v1/auth"
 
 
@@ -32,7 +33,7 @@ def me_out(user: User) -> MeOut:
 def _set_refresh_cookie(response: Response, tokens: IssuedTokens) -> None:
     settings = get_settings()
     response.set_cookie(
-        key=settings.refresh_cookie_name,
+        key=REFRESH_COOKIE_NAME,
         value=tokens.refresh_token,
         max_age=settings.refresh_token_days * 86400,
         path=REFRESH_COOKIE_PATH,
@@ -45,7 +46,7 @@ def _set_refresh_cookie(response: Response, tokens: IssuedTokens) -> None:
 def _clear_refresh_cookie(response: Response) -> None:
     settings = get_settings()
     response.delete_cookie(
-        key=settings.refresh_cookie_name,
+        key=REFRESH_COOKIE_NAME,
         path=REFRESH_COOKIE_PATH,
         httponly=True,
         secure=settings.cookie_secure,
@@ -78,7 +79,7 @@ def refresh(
     db: DbSession,
     ctx: ReqCtx,
     x_requested_with: Annotated[str | None, Header(description="Must be `XMLHttpRequest` (CSRF guard)")] = None,
-    refresh_cookie: Annotated[str | None, Cookie(alias="ft_refresh", include_in_schema=False)] = None,
+    refresh_cookie: Annotated[str | None, Cookie(alias=REFRESH_COOKIE_NAME, include_in_schema=False)] = None,
 ) -> TokenOut:
     """Exchange the refresh cookie for a new access token. The refresh token is rotated."""
     if x_requested_with != "XMLHttpRequest":

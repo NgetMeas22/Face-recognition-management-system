@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     login_ip_rate_limit_per_minute: int = Field(default=30, ge=1, le=10000)
 
     # HTTP
-    cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:5173"]
+    cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000"]
 
     # Locale
     timezone: str = "Asia/Phnom_Penh"

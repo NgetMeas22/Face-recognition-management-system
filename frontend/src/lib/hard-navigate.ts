@@ -5,6 +5,5 @@
  * Use router.push() for ordinary navigation.
  */
 export function hardNavigate(path: `/${string}`): void {
-  // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- deliberate: see above
   window.location.assign(path);
 }

@@ -15,12 +15,14 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSkeleton,
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { NAV_GROUPS, NAV_ITEMS } from "@/lib/navigation";
 import { LocaleLink, stripLocale, useI18n } from "@/lib/i18n";
+
+const NAV_SKELETON_WIDTHS = ["70%", "85%", "60%", "75%", "90%", "65%", "80%"];
 
 export function AppSidebar() {
   const pathname = stripLocale(usePathname()).path;
@@ -29,7 +31,7 @@ export function AppSidebar() {
   const { t } = useI18n();
 
   // Hide links the user's role cannot open. The backend still enforces this on every request.
-  const visible = NAV_ITEMS.filter((item) => allows(item.requires));
+  const visible = status === "authenticated" ? NAV_ITEMS.filter((item) => allows(item.requires)) : [];
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/80">
@@ -53,10 +55,13 @@ export function AppSidebar() {
 
       <SidebarContent className="px-2 py-2">
         {status !== "authenticated" && (
+          // Fixed widths: shadcn's SidebarMenuSkeleton uses Math.random(), which breaks prerendering
+          // and hydration.
           <SidebarMenu className="gap-1 px-1 pt-2" aria-hidden>
-            {Array.from({ length: 7 }, (_, i) => (
-              <SidebarMenuItem key={i}>
-                <SidebarMenuSkeleton showIcon />
+            {NAV_SKELETON_WIDTHS.map((width, i) => (
+              <SidebarMenuItem key={i} className="flex h-8 items-center gap-2 rounded-md px-2">
+                <Skeleton className="size-4 rounded-md" />
+                <Skeleton className="h-4 flex-1" style={{ maxWidth: width }} />
               </SidebarMenuItem>
             ))}
           </SidebarMenu>

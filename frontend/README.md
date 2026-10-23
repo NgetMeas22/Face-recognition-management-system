@@ -90,6 +90,22 @@ Browser ──► http://localhost:3000/api/v1/*  ──(Next.js rewrite)──�
 - **Logout / password change** do a full page load to `/login`. Next.js keeps visited pages mounted
   in memory, and a full load is what discards the previous user's data.
 
+## Language & URLs (English / ខ្មែរ)
+
+Every page lives under a language prefix: **`/en/...`** for English and **`/km/...`** for Khmer
+(e.g. `/en/dashboard`, `/km/settings`). The routes are in `src/app/[locale]/`.
+
+- **No prefix → redirect.** `src/proxy.ts` sends `/`, `/dashboard` and old bookmarks to the
+  visitor's language: the `facetrack_locale` cookie (last choice), then the browser's
+  `Accept-Language`, then English. `/api/*`, `/_next/*` and files are never redirected.
+- **Switching language** (top bar, 🇬🇧/🇰🇭) keeps the current page and swaps only the prefix,
+  e.g. `/en/reports?x=1` → `/km/reports?x=1`, and remembers the choice in the cookie.
+- **Links in code stay locale-less.** Use `<LocaleLink href="/scanner">` and
+  `useLocaleRouter().push("/settings")` from `@/lib/i18n`. They add the current prefix.
+  `hardNavigate()` does the same for full-page loads.
+- `<html lang>` is rendered on the server (`en` or `km`), and both languages prerender as static pages.
+- Unknown URLs (`/en/does-not-exist`) show `src/app/global-not-found.tsx`.
+
 ## Role-based UI
 
 The sidebar and pages use the `permissions` list from `GET /api/v1/auth/me` (matrix:

@@ -2,6 +2,7 @@
 // [locale] root layout, so it brings its own <html>, styles and fonts.
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
+import Link from "next/link";
 
 import "./globals.css";
 
@@ -23,13 +24,13 @@ export default function GlobalNotFound() {
             The page you asked for does not exist.{" "}
             <span lang="km">រកមិនឃើញទំព័រ។</span>
           </p>
-          {/* A plain <a>: the proxy adds the visitor's language to "/". */}
-          <a
+          {/* The proxy adds the visitor's language to "/". */}
+          <Link
             href="/"
             className="inline-flex h-8 items-center rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground"
           >
             Back to dashboard
-          </a>
+          </Link>
         </main>
       </body>
     </html>

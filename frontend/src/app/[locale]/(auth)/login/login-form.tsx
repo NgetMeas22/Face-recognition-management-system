@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle, Eye, EyeOff, Info, Loader2, LogIn } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -23,7 +23,11 @@ const loginSchema = z.object({
 });
 type LoginValues = z.infer<typeof loginSchema>;
 
+const noopSubscribe = () => () => {};
+
 export function LoginForm() {
+  // false during server render and hydration, true once React owns the form (used by e2e tests).
+  const hydrated = useSyncExternalStore(noopSubscribe, () => true, () => false);
   const { login, status } = useAuth();
   const { isKhmer, t } = useI18n();
   const router = useLocaleRouter();
@@ -73,7 +77,7 @@ export function LoginForm() {
   const submitting = form.formState.isSubmitting;
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} noValidate className="space-y-4" aria-describedby="login-error">
+    <form onSubmit={form.handleSubmit(onSubmit)} data-hydrated={hydrated || undefined} noValidate className="space-y-4" aria-describedby="login-error">
       {reason && !formError && (
         <Alert className="py-2.5 text-xs">
           <Info className="size-4" aria-hidden />

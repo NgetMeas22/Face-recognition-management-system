@@ -21,7 +21,7 @@ identifying **enrolled, consenting** people from a webcam scan or an uploaded ph
 
 ## Quick start (Windows)
 
-1. Start MySQL (Laragon → **Start All**).
+1. Make sure the PostgreSQL service is running (`Get-Service postgresql*`). Set up the role and database once, as described in [backend/README.md](backend/README.md#4-create-the-role-and-databases).
 2. Backend: first-time setup in **[backend/README.md](backend/README.md)**, then
    ```powershell
    cd backend
@@ -46,7 +46,7 @@ identifying **enrolled, consenting** people from a webcam scan or an uploaded ph
 | Layer | Choice |
 |-------|--------|
 | Backend | Python 3.12+ (developed on 3.14), FastAPI, Pydantic v2 |
-| Database | MySQL 8.4 (Laragon), SQLAlchemy 2.x, Alembic, PyMySQL driver |
+| Database | PostgreSQL 18 (15+) managed with pgAdmin 4, SQLAlchemy 2.x, Alembic, psycopg 3 driver |
 | Face processing | OpenCV 4.x DNN: **YuNet** detector + **SFace** 128‑d embeddings (ONNX) |
 | Auth | JWT access tokens (PyJWT) + rotating refresh cookie, Argon2 hashing (pwdlib) |
 | Crypto | AES‑256‑GCM (`cryptography`) for face templates and stored photos |
@@ -58,7 +58,7 @@ identifying **enrolled, consenting** people from a webcam scan or an uploaded ph
 |------|-------|
 | **Native Windows CPython 3.12–3.14** | Use the `py` launcher (`py -3.14`). **Do not use the MSYS2 Python** at `C:\msys64\ucrt64\bin\python.exe` — it is first on this machine's `PATH` and cannot install the OpenCV/NumPy Windows wheels. |
 | Node.js 22 | Installed. npm scripts call tools through `node` because the folder path contains `&` (see frontend/README.md). |
-| MySQL 8.x | Laragon's MySQL 8.4.3 is installed. |
+| PostgreSQL 15+ with pgAdmin 4 | PostgreSQL 18 + pgAdmin 4 are installed (EDB installer). Default database `facetrack` on port 5432; settings come from `POSTGRES_*` in `backend/.env`. |
 | ~40 MB of model weights | Downloaded by a script in Phase 4 (YuNet ≈ 0.2 MB, SFace ≈ 37 MB). |
 
 No C/C++ compiler is required: every backend dependency installs from pre-built wheels.

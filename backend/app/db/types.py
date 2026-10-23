@@ -3,9 +3,8 @@
 from datetime import UTC, datetime
 
 from sqlalchemy import DateTime
-from sqlalchemy.dialects import mysql
 from sqlalchemy.engine import Dialect
-from sqlalchemy.types import TypeDecorator, TypeEngine
+from sqlalchemy.types import TypeDecorator
 
 
 def utcnow() -> datetime:
@@ -13,24 +12,24 @@ def utcnow() -> datetime:
 
 
 class UTCDateTime(TypeDecorator[datetime]):
-    """Stores naive UTC in DATETIME(6); always returns timezone-aware UTC datetimes."""
+    """`timestamptz` column that only accepts timezone-aware datetimes and always returns UTC.
 
-    impl = DateTime
+    PostgreSQL stores timestamptz as an absolute instant; psycopg returns it in the session's
+    TimeZone, so results are normalised to UTC here. Naive datetimes are refused because their
+    meaning depends on the machine's local clock.
+    """
+
+    impl = DateTime(timezone=True)
     cache_ok = True
-
-    def load_dialect_impl(self, dialect: Dialect) -> TypeEngine[datetime]:
-        if dialect.name == "mysql":
-            return dialect.type_descriptor(mysql.DATETIME(fsp=6))
-        return dialect.type_descriptor(DateTime())
 
     def process_bind_param(self, value: datetime | None, dialect: Dialect) -> datetime | None:
         if value is None:
             return None
         if value.tzinfo is None:
             raise ValueError("UTCDateTime requires a timezone-aware datetime")
-        return value.astimezone(UTC).replace(tzinfo=None)
+        return value.astimezone(UTC)
 
     def process_result_value(self, value: datetime | None, dialect: Dialect) -> datetime | None:
         if value is None:
             return None
-        return value.replace(tzinfo=UTC)
+        return value.astimezone(UTC) if value.tzinfo else value.replace(tzinfo=UTC)

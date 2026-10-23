@@ -34,7 +34,7 @@ There are no `NEXT_PUBLIC_*` variables. The JWT secret and DB credentials exist 
 
 ## Run both applications
 
-**Terminal 1: backend** (MySQL must be running in Laragon):
+**Terminal 1: backend** (the PostgreSQL service must be running):
 
 ```powershell
 cd "D:\Code All\Python_All\FaceTrack AI — Face Recognition & People Management System\backend"

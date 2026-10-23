@@ -1,9 +1,9 @@
 from enum import StrEnum
 
-from sqlalchemy import Enum, ForeignKey, Index, String
+from sqlalchemy import ForeignKey, Index, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.db.base import TABLE_ARGS, Base, BigId, CreatedAtMixin, IdMixin
+from app.db.base import Base, BigId, CreatedAtMixin, IdMixin, enum_column
 
 
 class ConsentType(StrEnum):
@@ -25,12 +25,12 @@ class ConsentRecord(IdMixin, CreatedAtMixin, Base):
     """Append-only consent history. The latest row per (person, type) is the current state."""
 
     __tablename__ = "consent_records"
-    __table_args__ = (Index("ix_consent_person", "person_id", "consent_type", "created_at"), TABLE_ARGS)
+    __table_args__ = (Index("ix_consent_person", "person_id", "consent_type", "created_at"),)
 
     person_id: Mapped[int] = mapped_column(BigId, ForeignKey("people.id", ondelete="CASCADE"))
-    consent_type: Mapped[ConsentType] = mapped_column(Enum(ConsentType, name="consent_type"))
-    action: Mapped[ConsentAction] = mapped_column(Enum(ConsentAction, name="consent_action"))
-    method: Mapped[ConsentMethod] = mapped_column(Enum(ConsentMethod, name="consent_method"))
+    consent_type: Mapped[ConsentType] = mapped_column(enum_column(ConsentType, "consent_type"))
+    action: Mapped[ConsentAction] = mapped_column(enum_column(ConsentAction, "consent_action"))
+    method: Mapped[ConsentMethod] = mapped_column(enum_column(ConsentMethod, "consent_method"))
     notice_version: Mapped[str] = mapped_column(String(20))
     evidence_ref: Mapped[str | None] = mapped_column(String(255))
     recorded_by: Mapped[int] = mapped_column(BigId, ForeignKey("users.id", ondelete="RESTRICT"))

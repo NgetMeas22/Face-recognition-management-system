@@ -1,11 +1,10 @@
 from datetime import date, datetime
 from enum import StrEnum
 
-from sqlalchemy import Boolean, Date, Enum, ForeignKey, Index, Integer, SmallInteger, String, text
-from sqlalchemy.dialects import mysql
+from sqlalchemy import Boolean, CheckConstraint, Date, ForeignKey, Index, Integer, SmallInteger, String, text, true
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import TABLE_ARGS, Base, BigId, IdMixin, TimestampMixin
+from app.db.base import Base, BigId, IdMixin, TimestampMixin, enum_column
 from app.db.types import UTCDateTime
 
 
@@ -29,23 +28,26 @@ class Department(IdMixin, TimestampMixin, Base):
     """A department (employees) or a class (students)."""
 
     __tablename__ = "departments"
-    __table_args__ = TABLE_ARGS
 
     code: Mapped[str] = mapped_column(String(20), unique=True)
     name: Mapped[str] = mapped_column(String(150))
     name_km: Mapped[str | None] = mapped_column(String(150))
-    kind: Mapped[DepartmentKind] = mapped_column(Enum(DepartmentKind, name="department_kind"))
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default=text("1"))
+    kind: Mapped[DepartmentKind] = mapped_column(enum_column(DepartmentKind, "department_kind"))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default=true())
 
 
 class Person(IdMixin, TimestampMixin, Base):
     """An employee or student who may be enrolled for recognition."""
 
     __tablename__ = "people"
-    __table_args__ = (Index("ix_people_name", "last_name", "first_name"), TABLE_ARGS)
+    __table_args__ = (
+        Index("ix_people_name", "last_name", "first_name"),
+        CheckConstraint("email IS NULL OR email = lower(email)", name="email_lowercase"),
+        CheckConstraint("(status = 'ARCHIVED') = (archived_at IS NOT NULL)", name="archived_at_matches_status"),
+    )
 
     person_code: Mapped[str] = mapped_column(String(30), unique=True)
-    person_type: Mapped[PersonType] = mapped_column(Enum(PersonType, name="person_type"), index=True)
+    person_type: Mapped[PersonType] = mapped_column(enum_column(PersonType, "person_type"), index=True)
     first_name: Mapped[str] = mapped_column(String(100))
     last_name: Mapped[str] = mapped_column(String(100))
     name_km: Mapped[str | None] = mapped_column(String(200))
@@ -56,7 +58,7 @@ class Person(IdMixin, TimestampMixin, Base):
     email: Mapped[str | None] = mapped_column(String(255), unique=True)
     phone: Mapped[str | None] = mapped_column(String(30))
     status: Mapped[PersonStatus] = mapped_column(
-        Enum(PersonStatus, name="person_status"),
+        enum_column(PersonStatus, "person_status"),
         default=PersonStatus.ACTIVE,
         server_default=PersonStatus.ACTIVE.value,
         index=True,
@@ -79,10 +81,8 @@ class IdSequence(Base):
     """Per-prefix, per-year counter for person codes (read with SELECT ... FOR UPDATE)."""
 
     __tablename__ = "id_sequences"
-    __table_args__ = TABLE_ARGS
+    __table_args__ = (CheckConstraint("next_value > 0", name="next_value_positive"),)
 
     prefix: Mapped[str] = mapped_column(String(10), primary_key=True)
     year: Mapped[int] = mapped_column(SmallInteger, primary_key=True, autoincrement=False)
-    next_value: Mapped[int] = mapped_column(
-        Integer().with_variant(mysql.INTEGER(unsigned=True), "mysql"), default=1, server_default=text("1")
-    )
+    next_value: Mapped[int] = mapped_column(Integer, default=1, server_default=text("1"))

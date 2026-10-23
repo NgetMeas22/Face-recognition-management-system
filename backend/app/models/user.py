@@ -1,9 +1,9 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, ForeignKey, SmallInteger, String, text
+from sqlalchemy import Boolean, CheckConstraint, ForeignKey, SmallInteger, String, func, text, true
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import TABLE_ARGS, Base, BigId, CreatedAtMixin, IdMixin, TimestampMixin
+from app.db.base import Base, BigId, CreatedAtMixin, IdMixin, TimestampMixin
 from app.db.types import UTCDateTime, utcnow
 from app.models.role import Role
 
@@ -12,20 +12,24 @@ class User(IdMixin, TimestampMixin, Base):
     """A system operator account (not a person being recognised)."""
 
     __tablename__ = "users"
-    __table_args__ = TABLE_ARGS
+    __table_args__ = (
+        # PostgreSQL compares text case-sensitively, so uniqueness is only meaningful if the app
+        # stores these normalised. The constraint makes that a database guarantee.
+        CheckConstraint("username = lower(username)", name="username_lowercase"),
+        CheckConstraint("email = lower(email)", name="email_lowercase"),
+        CheckConstraint("failed_login_count >= 0", name="failed_login_count_non_negative"),
+    )
 
     username: Mapped[str] = mapped_column(String(50), unique=True)
     email: Mapped[str] = mapped_column(String(255), unique=True)
     full_name: Mapped[str] = mapped_column(String(150))
     password_hash: Mapped[str] = mapped_column(String(255))
     role_id: Mapped[int] = mapped_column(BigId, ForeignKey("roles.id", ondelete="RESTRICT"), index=True)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default=text("1"))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default=true())
     failed_login_count: Mapped[int] = mapped_column(SmallInteger, default=0, server_default=text("0"))
     locked_until: Mapped[datetime | None] = mapped_column(UTCDateTime)
     last_login_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
-    password_changed_at: Mapped[datetime] = mapped_column(
-        UTCDateTime, default=utcnow, server_default=text("CURRENT_TIMESTAMP(6)")
-    )
+    password_changed_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow, server_default=func.now())
 
     role: Mapped[Role] = relationship()
     sessions: Mapped[list["UserSession"]] = relationship(back_populates="user", passive_deletes=True)
@@ -39,7 +43,6 @@ class UserSession(IdMixin, CreatedAtMixin, Base):
     """
 
     __tablename__ = "user_sessions"
-    __table_args__ = TABLE_ARGS
 
     user_id: Mapped[int] = mapped_column(BigId, ForeignKey("users.id", ondelete="CASCADE"), index=True)
     token_hash: Mapped[str] = mapped_column(String(64), unique=True)

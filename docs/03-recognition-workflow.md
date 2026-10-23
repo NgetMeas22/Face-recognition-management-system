@@ -25,7 +25,7 @@ sequenceDiagram
     participant UI as Face Registration page
     participant API as POST /people/{id}/faces
     participant FE as face engine
-    participant DB as MySQL
+    participant DB as PostgreSQL
 
     HR->>UI: Webcam capture or upload JPG/PNG
     UI->>API: multipart image

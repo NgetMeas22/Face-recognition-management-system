@@ -14,18 +14,17 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name, disable_existing_loggers=False)
 
-# Tests pass an explicit URL; normal runs use DATABASE_URL from .env.
+# Tests pass an explicit URL; normal runs use POSTGRES_* (or DATABASE_URL) from .env.
 if not config.get_main_option("sqlalchemy.url"):
-    config.set_main_option("sqlalchemy.url", get_settings().database_url.replace("%", "%%"))
+    config.set_main_option("sqlalchemy.url", get_settings().sqlalchemy_url.replace("%", "%%"))
 
 target_metadata = Base.metadata
 
 
 def render_item(type_: str, obj: Any, autogen_context: Any) -> str | bool:
-    """Render UTCDateTime as plain DATETIME(6) so migrations don't import app code."""
+    """Render UTCDateTime as plain timestamptz so migrations don't import app code."""
     if type_ == "type" and isinstance(obj, UTCDateTime):
-        autogen_context.imports.add("from sqlalchemy.dialects import mysql")
-        return "mysql.DATETIME(fsp=6)"
+        return "sa.DateTime(timezone=True)"
     return False
 
 

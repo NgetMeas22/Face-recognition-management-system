@@ -2,7 +2,7 @@
 
 import re
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.errors import AppError, ConflictError, NotFoundError
@@ -23,9 +23,11 @@ def get_user_with_role(db: Session, user_id: int) -> User | None:
 
 
 def find_by_login(db: Session, login: str) -> User | None:
+    # Stored values are lowercase (enforced by CHECK constraints), so an exact match on the
+    # normalised input is case-insensitive and can use the unique index.
     login = login.strip().lower()
     column = User.email if "@" in login else User.username
-    stmt = select(User).where(func.lower(column) == login).options(
+    stmt = select(User).where(column == login).options(
         selectinload(User.role).selectinload(Role.permissions)
     )
     return db.scalar(stmt)

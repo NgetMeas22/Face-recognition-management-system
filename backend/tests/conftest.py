@@ -1,7 +1,7 @@
 """Test fixtures.
 
-Tests run against a real MySQL database (TEST_DATABASE_URL), which is dropped and
-recreated by Alembic at the start of the run. Each test runs inside a transaction
+Tests run against a real PostgreSQL database (POSTGRES_TEST_DB, default facetrack_test). Its
+schema is dropped and rebuilt by Alembic at the start of the run. Each test runs inside a transaction
 that is rolled back afterwards, so tests never see each other's data.
 """
 
@@ -28,10 +28,7 @@ TEST_PASSWORD = "Correct-Horse-42"
 
 
 def _test_url(db_name: str | None = None) -> str:
-    url = get_settings().test_database_url
-    if not url:
-        pytest.exit("TEST_DATABASE_URL is not set in backend/.env", returncode=2)
-    parsed = make_url(url)
+    parsed = make_url(get_settings().sqlalchemy_test_url)
     if db_name:
         parsed = parsed.set(database=db_name)
     if not parsed.database or "test" not in parsed.database:
@@ -39,19 +36,22 @@ def _test_url(db_name: str | None = None) -> str:
     return parsed.render_as_string(hide_password=False)
 
 
-def recreate_database(url: str) -> None:
+def reset_schema(url: str) -> None:
+    """Drops and recreates the `public` schema of a *test* database (owned by the app role)."""
     parsed = make_url(url)
-    server = create_engine(parsed._replace(database=None))  # URL.set() treats None as "unchanged"
+    engine = create_engine(parsed)
     try:
-        with server.connect() as conn:
-            conn.execute(text(f"DROP DATABASE IF EXISTS `{parsed.database}`"))
-            conn.execute(
-                text(f"CREATE DATABASE `{parsed.database}` CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci")
-            )
+        with engine.begin() as conn:
+            conn.execute(text("DROP SCHEMA IF EXISTS public CASCADE"))
+            conn.execute(text("CREATE SCHEMA public"))
     except OperationalError as exc:
-        pytest.exit(f"Cannot prepare test database on {parsed.host}:{parsed.port} (is MySQL running?):\n{exc}", 2)
+        pytest.exit(
+            f"Cannot prepare test database '{parsed.database}' on {parsed.host}:{parsed.port}. Is PostgreSQL "
+            f"running, and did you run scripts/create_database.sql (it creates the test databases)?\n{exc}",
+            2,
+        )
     finally:
-        server.dispose()
+        engine.dispose()
 
 
 def alembic_config(url: str) -> Config:
@@ -63,7 +63,7 @@ def alembic_config(url: str) -> Config:
 @pytest.fixture(scope="session")
 def engine() -> Iterator[Engine]:
     url = _test_url()
-    recreate_database(url)
+    reset_schema(url)
     command.upgrade(alembic_config(url), "head")
     eng = create_engine(url)
     with Session(eng) as db:

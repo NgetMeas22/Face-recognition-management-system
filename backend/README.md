@@ -1,30 +1,41 @@
 # FaceTrack AI — Backend
 
-FastAPI + SQLAlchemy 2 + Alembic + MySQL 8. This stage provides the database schema, migrations,
-JWT authentication with role-based permissions, health checks, error handling and tests.
-Face recognition is **not** implemented yet (Phase 4).
+FastAPI + SQLAlchemy 2 + Alembic + **PostgreSQL** (psycopg 3). This stage provides the database
+schema, migrations, JWT authentication with role-based permissions, health checks, error handling
+and tests. Face recognition is **not** implemented yet (Phase 4).
 
 ## Requirements
 
 | Tool | Version used | Notes |
 |------|--------------|-------|
 | Windows CPython | 3.14 (3.12+ works) | Use the `py` launcher. **Not** `C:\msys64\ucrt64\bin\python.exe`: it is first on `PATH` on this machine and cannot install Windows wheels. |
-| MySQL | 8.4.3 (Laragon) | `C:\laragon\bin\mysql\mysql-8.4.3-winx64` |
+| PostgreSQL | 18 (15+ works) | Windows installer from EDB, which includes **pgAdmin 4**. Default port 5432. |
+
+The Python driver `psycopg[binary]` bundles its own libpq, so the app needs no PostgreSQL client
+libraries. `psql.exe` is used below only for the one-time setup script.
 
 All commands below are for **PowerShell**, run from the `backend` folder:
 
 ```powershell
 cd "D:\Code All\Python_All\FaceTrack AI — Face Recognition & People Management System\backend"
+$psql = "C:\Program Files\PostgreSQL\18\bin\psql.exe"   # adjust 18 to your version
 ```
 
 ## First-time setup
 
-### 1. Start MySQL
+### 1. Install PostgreSQL and pgAdmin 4
 
-Open Laragon and click **Start All**. Or start only MySQL with Laragon's config:
+1. Download the Windows installer from https://www.postgresql.org/download/windows/ (EDB).
+2. Keep the components **PostgreSQL Server**, **pgAdmin 4** and **Command Line Tools**.
+3. Set a password for the `postgres` superuser and keep it safe. The app never uses this
+   account; it's only for step 4.
+4. Port **5432**, default locale. The installer registers a Windows service that starts automatically.
+
+Check that the server is running:
 
 ```powershell
-Start-Process "C:\laragon\bin\mysql\mysql-8.4.3-winx64\bin\mysqld.exe" -ArgumentList '--defaults-file="C:\laragon\bin\mysql\mysql-8.4.3-winx64\my.ini"' -WindowStyle Hidden
+Get-Service postgresql*            # Status should be Running
+& $psql --version
 ```
 
 ### 2. Create the virtual environment and install packages
@@ -42,33 +53,70 @@ In VS Code, pick the interpreter `backend\.venv\Scripts\python.exe` (*Python: Se
 
 ```powershell
 Copy-Item .env.example .env
-.\.venv\Scripts\python.exe -c "import secrets; print('DB password:', secrets.token_urlsafe(18)); print('JWT_SECRET:', secrets.token_urlsafe(48))"
+.\.venv\Scripts\python.exe -c "import secrets; print('POSTGRES_PASSWORD:', secrets.token_urlsafe(24)); print('JWT_SECRET:', secrets.token_urlsafe(48))"
 ```
 
-Edit `.env`:
+Edit `.env` and set `POSTGRES_PASSWORD` and `JWT_SECRET`. The connection settings are read from
+environment variables, with these defaults:
 
-- Put the DB password into **both** `DATABASE_URL` and `TEST_DATABASE_URL`, replacing `CHANGE_ME`.
-- Set `JWT_SECRET` (at least 32 characters).
+| Variable | Default | Meaning |
+|----------|---------|---------|
+| `POSTGRES_HOST` | `localhost` | Server host |
+| `POSTGRES_PORT` | `5432` | Server port |
+| `POSTGRES_DB` | `facetrack` | Application database |
+| `POSTGRES_USER` | `facetrack` | Application role (not a superuser) |
+| `POSTGRES_PASSWORD` | — | That role's password |
+| `POSTGRES_TEST_DB` | `facetrack_test` | pytest database. Its schema is **wiped** on every test run. |
+| `DATABASE_URL` / `TEST_DATABASE_URL` | unset | Optional full URLs (`postgresql+psycopg://…`) that override the parts above |
 
-`.env` is git-ignored. Never commit it.
+Real environment variables override `.env`. Special characters in `POSTGRES_PASSWORD` are fine;
+the URL is built and escaped for you. `.env` is git-ignored. Never commit it.
 
-### 4. Create the database and MySQL user
+### 4. Create the role and databases
 
-Edit `scripts\create_database.sql` locally, replacing `CHANGE_ME` with the same DB password, or pipe
-it through a replace as shown below. Then run it as root. Laragon's root has no password by default.
+This creates the login role `facetrack` (no superuser, no `CREATEDB`) and three databases it owns:
+`facetrack`, `facetrack_test` and `facetrack_test_mig`. They use UTF-8 encoding and ICU collation,
+so Khmer text is stored and sorted correctly. The script is idempotent and never drops anything.
+
+**Option A: psql** (prompts for the `postgres` password):
 
 ```powershell
-$pw = "<the DB password from step 3>"
-(Get-Content scripts\create_database.sql -Raw) -replace 'CHANGE_ME', $pw | & "C:\laragon\bin\mysql\mysql-8.4.3-winx64\bin\mysql.exe" -u root
+$appPw = (Select-String -Path .env -Pattern '^POSTGRES_PASSWORD=(.*)$').Matches[0].Groups[1].Value
+& $psql -h localhost -U postgres -d postgres -v app_password="$appPw" -f scripts\create_database.sql
 ```
 
-This creates the `facetrack` database (utf8mb4, for Khmer text) and a `facetrack` user. The user
-has only the privileges the app needs on `facetrack`, plus full rights on the two test databases.
+**Option B: pgAdmin 4.**
+
+1. Open **pgAdmin 4** → *Servers* → *PostgreSQL 18* → enter the `postgres` password.
+2. Right-click **Login/Group Roles** → *Create* → *Login/Group Role…*:
+   - *General* → Name: `facetrack`
+   - *Definition* → Password: the `POSTGRES_PASSWORD` from `.env`
+   - *Privileges* → **Can login? = Yes**; leave *Superuser*, *Create roles* and *Create databases* **off**
+   - Save
+3. Right-click **Databases** → *Create* → *Database…*:
+   - *General* → Database: `facetrack`, Owner: `facetrack`
+   - *Definition* → Encoding `UTF8`, Template `template0`, Locale provider `icu`, ICU locale `und`
+   - Save. Repeat for **`facetrack_test`** and **`facetrack_test_mig`**.
+4. Or open *Tools → Query Tool* on the `postgres` database and run the same thing as SQL. Replace
+   the password first:
+   ```sql
+   CREATE ROLE facetrack LOGIN PASSWORD 'CHANGE_ME' NOSUPERUSER NOCREATEDB NOCREATEROLE;
+   CREATE DATABASE facetrack          OWNER facetrack ENCODING 'UTF8' TEMPLATE template0 LOCALE_PROVIDER icu ICU_LOCALE 'und';
+   CREATE DATABASE facetrack_test     OWNER facetrack ENCODING 'UTF8' TEMPLATE template0 LOCALE_PROVIDER icu ICU_LOCALE 'und';
+   CREATE DATABASE facetrack_test_mig OWNER facetrack ENCODING 'UTF8' TEMPLATE template0 LOCALE_PROVIDER icu ICU_LOCALE 'und';
+   REVOKE CONNECT, TEMPORARY ON DATABASE facetrack, facetrack_test, facetrack_test_mig FROM PUBLIC;
+   ```
+   (`CREATE DATABASE` can't run inside a transaction. In pgAdmin, run the statements one at a time
+   if it complains.)
+
+To browse the data later, register a connection in pgAdmin as `facetrack` (not `postgres`):
+*Object → Register → Server…* → Host `localhost`, Port `5432`, Maintenance DB `facetrack`, Username `facetrack`.
 
 ### 5. Run migrations and seed
 
 ```powershell
 .\.venv\Scripts\python.exe -m alembic upgrade head
+.\.venv\Scripts\python.exe -m alembic current       # should print: 0001 (head)
 .\.venv\Scripts\python.exe -m app.cli seed --demo
 ```
 
@@ -84,6 +132,22 @@ resets the three system roles to the default permissions.
 
 You are prompted for the password twice. Policy: at least 10 characters, not repetitive, not a
 common password, and it must not contain the username.
+
+### 7. Verify the PostgreSQL connection
+
+```powershell
+# a) The app's own check: database reachable + migrations at head
+.\.venv\Scripts\python.exe -c "from sqlalchemy import text; from app.db.session import get_engine; c=get_engine().connect(); print(c.execute(text('select current_user, current_database(), version()')).one()); c.close()"
+
+# b) Through the API (start it first, see below)
+Invoke-RestMethod http://127.0.0.1:8000/api/v1/health/ready
+#   status: ok   database: ok   migrations: up_to_date   current_revision: 0001
+
+# c) With psql, as the app role
+& $psql -h localhost -U facetrack -d facetrack -c "\dt"     # 15 tables: 14 app tables + alembic_version
+```
+
+In pgAdmin: *facetrack → Schemas → public → Tables* shows the same 15 tables.
 
 ## Run the API
 
@@ -162,9 +226,11 @@ The `request_id` is also returned in the `X-Request-ID` header and stored in aud
 .\.venv\Scripts\python.exe -m pytest
 ```
 
-The tests use the real MySQL server. At startup they **drop and recreate** `facetrack_test` (from
-`TEST_DATABASE_URL`) and `facetrack_test_mig`, and they refuse any database whose name lacks
-`test`. Each test runs in a transaction that is rolled back. There are 60 tests covering:
+The tests use the real PostgreSQL server. At startup they **drop and recreate the `public` schema**
+of `facetrack_test` (`POSTGRES_TEST_DB`) and `facetrack_test_mig`, then build it with Alembic. They
+refuse any database whose name lacks `test`, and they never touch `facetrack`. The test databases
+must exist (step 4 creates them); the app role owns them, so it needs no `CREATEDB` privilege. Each
+test runs in a transaction that is rolled back. There are 74 tests covering:
 
 - Login, lockout, rate limits, token expiry/tampering, refresh rotation and reuse detection, logout,
   password change, RBAC per role, and audit rows
@@ -172,6 +238,11 @@ The tests use the real MySQL server. At startup they **drop and recreate** `face
 - Health and readiness, including detection of pending migrations
 - Models: Khmer text round-trip, unique codes, cascade deletes of biometric data, refusal of naive datetimes
 - Migrations: `upgrade head`, `alembic check` (models and migration in sync), `downgrade base`, upgrade again
+- PostgreSQL specifics: CHECK constraints (enum values, lowercase usernames/emails, attendance and
+  archive rules), `timestamptz` round-trips as UTC under another session time zone, JSONB queries,
+  identity primary keys, an index on every foreign key that can cascade, UTF-8 server encoding
+- Config: URL built from `POSTGRES_*` with special-character passwords, `DATABASE_URL` override,
+  rejection of non-psycopg-3 URLs (`mysql+pymysql://`, `postgresql+psycopg2://`)
 
 ## Database migrations
 
@@ -182,14 +253,23 @@ The tests use the real MySQL server. At startup they **drop and recreate** `face
 .\.venv\Scripts\python.exe -m alembic check                        # fails if models and migrations differ
 ```
 
-Always read an autogenerated migration before applying it. On MySQL, don't drop an index that backs
-a foreign key; drop the table or the foreign key first.
+Always read an autogenerated migration before applying it. Things to watch for on PostgreSQL:
+
+- **Enums** are `VARCHAR` + a `CHECK` constraint named `ck_<table>_<enum name>`, not native `ENUM`
+  types. Adding a value means changing the model; Alembic does **not** autogenerate CHECK changes,
+  so add `op.drop_constraint(...)` / `op.create_check_constraint(...)` by hand.
+- **Foreign keys are not indexed automatically** (MySQL did that). Add `index=True` to new FK
+  columns that are filtered on or that cascade.
+- **Text comparison is case-sensitive.** Normalise values (as usernames and emails are) or use
+  `func.lower()` with a matching expression index.
+- Avoid `ALTER TABLE … ADD COLUMN … NOT NULL` without a `server_default` on tables that already have rows.
 
 ## Project layout
 
 ```text
 backend/
-├── alembic/                 env.py, versions/20261023_0001_initial_schema.py
+├── alembic/                 env.py, versions/20261023_0001_initial_schema_postgresql.py
+│                            (legacy_mysql/ keeps the old MySQL migration for reference; not loaded)
 ├── app/
 │   ├── main.py              app factory: middleware, CORS, error handlers, routers
 │   ├── cli.py               seed, create-user
@@ -200,7 +280,7 @@ backend/
 │   ├── schemas/             Pydantic request/response models
 │   ├── services/            auth, users, audit, seed (no FastAPI imports)
 │   └── api/                 deps (current user, require_permission) and v1 routers
-├── scripts/create_database.sql
+├── scripts/create_database.sql   PostgreSQL role + databases (legacy/ has the old MySQL script)
 └── tests/                   unit/, api/, test_migrations.py
 ```
 
@@ -208,8 +288,19 @@ backend/
 
 | Symptom | Fix |
 |---------|-----|
-| `Can't connect to MySQL server on '127.0.0.1'` | Start MySQL (Laragon → Start All). |
-| `Access denied for user 'facetrack'` | The password in `.env` differs from the one used in `create_database.sql`. |
+| `connection refused` / `Is the server running on that host and accepting TCP/IP connections?` | Start the service: `Start-Service postgresql-x64-18` (or *Services* → postgresql-x64-18). |
+| `password authentication failed for user "facetrack"` | `POSTGRES_PASSWORD` in `.env` differs from the role's password. Reset it in pgAdmin (*Login/Group Roles → facetrack → Definition*) or with `ALTER ROLE facetrack PASSWORD '...'` as postgres. |
+| `database "facetrack" does not exist` | Run step 4. |
+| `Database URLs must use 'postgresql+psycopg://'` | A `DATABASE_URL` in `.env` or the environment uses another driver (e.g. `psycopg2` or MySQL). Remove it, or change the scheme. |
+| `permission denied for schema public` | The database isn't owned by `facetrack`. Run `ALTER DATABASE facetrack OWNER TO facetrack;` as postgres. |
 | `/health/ready` says `"migrations": "pending"` | Run `python -m alembic upgrade head`. |
 | `pip` tries to compile packages / `No module named numpy` later | You are using the MSYS2 Python. Recreate `.venv` with `py -3.14 -m venv .venv`. |
-| Khmer shows as `???` in the `mysql` console | It is only the console encoding. The data is stored as utf8mb4. |
+| Khmer shows as `???` in `psql` | Only the Windows console code page. Run `chcp 65001` first, or view the data in pgAdmin. It is stored as UTF-8. |
+
+## Moving from the earlier MySQL setup
+
+Earlier versions used MySQL 8 (Laragon). The MySQL database was left untouched; nothing was
+converted because it held only demo data (3 demo accounts, 5 seeded departments, test-login audit
+rows). On PostgreSQL the same data is recreated with `seed --demo` and `create-user`. If you ever
+need to copy real data across, export each table to CSV from MySQL and use `\copy` in psql in
+foreign-key order (roles → permissions → role_permissions → users → departments → people → …).

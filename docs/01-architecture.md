@@ -22,7 +22,7 @@ flowchart LR
         C[Crypto: AES-256-GCM]
     end
 
-    DB[(MySQL 8.4\nfacetrack)]
+    DB[(PostgreSQL 18\nfacetrack)]
     FS[(storage/\nencrypted photos)]
     M[(ml_models/\nYuNet + SFace ONNX)]
 
@@ -38,7 +38,7 @@ flowchart LR
     G -. loaded & decrypted at startup / on change .- DB
 ```
 
-**Request path:** browser → Next.js `/api/v1/...` (same-origin rewrite proxy) → FastAPI → JWT + permission check → router → service → SQLAlchemy → MySQL.
+**Request path:** browser → Next.js `/api/v1/...` (same-origin rewrite proxy) → FastAPI → JWT + permission check → router → service → SQLAlchemy → PostgreSQL.
 Face endpoints additionally pass the image through the face engine, which compares the embedding
 against an in-memory gallery of decrypted templates.
 
@@ -48,7 +48,7 @@ against an in-memory gallery of decrypted templates.
 |----------|--------|
 | **OpenCV YuNet + SFace** | Pure pip install on Windows (no dlib/CMake/MSVC), small CPU-friendly ONNX models, permissive licences (YuNet MIT, SFace Apache-2.0). `dlib`/`face_recognition` needs a C++ build on Windows; InsightFace's pretrained weights are licensed for non-commercial research only. |
 | **OpenCV pinned `>=4.10,<5`** | Verified on this machine: OpenCV 4.14 + YuNet + SFace on Python 3.14 produce 128‑d float32 embeddings. OpenCV 5.0 also works but prints DNN-engine warnings and is a fresh major release. |
-| **Sync SQLAlchemy 2.x + PyMySQL** | Face processing is CPU-bound anyway; sync code in FastAPI's thread pool is simpler to read and debug. PyMySQL is pure Python (no MySQL client libraries). |
+| **PostgreSQL + sync SQLAlchemy 2.x + psycopg 3** | PostgreSQL gives `timestamptz`, `JSONB`, CHECK constraints, transactional DDL (a failed migration rolls back cleanly) and ICU collation for Khmer. psycopg 3 ships prebuilt wheels with libpq, so nothing to compile on Windows. Face processing is CPU-bound anyway; sync code in FastAPI's thread pool is simpler to read and debug. |
 | **Embeddings compared in memory** | 10 000 people × 5 templates × 128 floats ≈ 25 MB; a matrix dot product takes milliseconds. No vector DB needed at this scale. |
 | **Single backend process** | The gallery cache lives in process memory. Multi-worker deployment would need a cache-invalidation signal (documented in Phase 7). |
 | **REST, not WebSockets, for live scanning** | The browser sends ~2 frames/second to a scan *session*; easy to rate-limit, test and log. |
@@ -228,7 +228,10 @@ These are defined in `backend/.env.example` in Phase 2 and read by `app/core/con
 
 | Variable | Example / default | Purpose |
 |----------|-------------------|---------|
-| `DATABASE_URL` | `mysql+pymysql://facetrack:***@127.0.0.1:3306/facetrack?charset=utf8mb4` | DB connection |
+| `POSTGRES_HOST` / `POSTGRES_PORT` / `POSTGRES_DB` | `localhost` / `5432` / `facetrack` | DB server and database |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` | `facetrack` / *** | Application role (not a superuser) |
+| `POSTGRES_TEST_DB` | `facetrack_test` | pytest database (schema wiped per run) |
+| `DATABASE_URL` | unset | Optional full `postgresql+psycopg://…` URL that overrides the parts above |
 | `JWT_SECRET` | 64 random bytes, base64 | Signs access tokens |
 | `ACCESS_TOKEN_MINUTES` | `15` | Access token lifetime |
 | `REFRESH_TOKEN_DAYS` | `7` | Refresh cookie lifetime |

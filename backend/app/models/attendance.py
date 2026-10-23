@@ -1,10 +1,10 @@
 from datetime import date, datetime
 from enum import StrEnum
 
-from sqlalchemy import Boolean, Date, Enum, ForeignKey, Index, String, text
+from sqlalchemy import Boolean, CheckConstraint, Date, ForeignKey, Index, String, false
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.db.base import TABLE_ARGS, Base, BigId, CreatedAtMixin, IdMixin
+from app.db.base import Base, BigId, CreatedAtMixin, IdMixin, enum_column
 from app.db.types import UTCDateTime
 
 
@@ -32,19 +32,25 @@ class AttendanceRecord(IdMixin, CreatedAtMixin, Base):
     __table_args__ = (
         Index("ix_att_person_time", "person_id", "occurred_at"),
         Index("ix_att_date_person", "attendance_date", "person_id"),
-        TABLE_ARGS,
+        CheckConstraint("event_type = 'CHECK_IN' OR punctuality IS NULL", name="punctuality_only_on_check_in"),
+        CheckConstraint("NOT is_voided OR void_reason IS NOT NULL", name="void_requires_reason"),
+        CheckConstraint("corrects_id IS NULL OR corrects_id <> id", name="no_self_correction"),
     )
 
     person_id: Mapped[int] = mapped_column(BigId, ForeignKey("people.id", ondelete="CASCADE"))
-    event_type: Mapped[AttendanceEventType] = mapped_column(Enum(AttendanceEventType, name="attendance_event_type"))
+    event_type: Mapped[AttendanceEventType] = mapped_column(enum_column(AttendanceEventType, "attendance_event_type"))
     occurred_at: Mapped[datetime] = mapped_column(UTCDateTime)
     attendance_date: Mapped[date] = mapped_column(Date)
-    method: Mapped[AttendanceMethod] = mapped_column(Enum(AttendanceMethod, name="attendance_method"))
-    punctuality: Mapped[Punctuality | None] = mapped_column(Enum(Punctuality, name="punctuality"))
-    scan_event_id: Mapped[int | None] = mapped_column(BigId, ForeignKey("scan_events.id", ondelete="SET NULL"))
-    verified_by_review: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("0"))
-    is_voided: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("0"))
+    method: Mapped[AttendanceMethod] = mapped_column(enum_column(AttendanceMethod, "attendance_method"))
+    punctuality: Mapped[Punctuality | None] = mapped_column(enum_column(Punctuality, "punctuality"))
+    scan_event_id: Mapped[int | None] = mapped_column(
+        BigId, ForeignKey("scan_events.id", ondelete="SET NULL"), index=True
+    )
+    verified_by_review: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
+    is_voided: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     void_reason: Mapped[str | None] = mapped_column(String(255))
-    corrects_id: Mapped[int | None] = mapped_column(BigId, ForeignKey("attendance_records.id", ondelete="SET NULL"))
+    corrects_id: Mapped[int | None] = mapped_column(
+        BigId, ForeignKey("attendance_records.id", ondelete="SET NULL"), index=True
+    )
     note: Mapped[str | None] = mapped_column(String(255))
     recorded_by: Mapped[int] = mapped_column(BigId, ForeignKey("users.id", ondelete="RESTRICT"))

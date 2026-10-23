@@ -14,7 +14,7 @@ def make_engine(url: str, *, echo: bool = False, pool_size: int = 5) -> Engine:
         url,
         echo=echo,
         pool_size=pool_size,
-        pool_pre_ping=True,  # survive MySQL's wait_timeout disconnects
+        pool_pre_ping=True,  # replace connections dropped by a server restart or idle timeout
         pool_recycle=3600,
     )
 
@@ -22,7 +22,7 @@ def make_engine(url: str, *, echo: bool = False, pool_size: int = 5) -> Engine:
 @lru_cache
 def get_engine() -> Engine:
     settings = get_settings()
-    return make_engine(settings.database_url, echo=settings.db_echo, pool_size=settings.db_pool_size)
+    return make_engine(settings.sqlalchemy_url, echo=settings.db_echo, pool_size=settings.db_pool_size)
 
 
 @lru_cache

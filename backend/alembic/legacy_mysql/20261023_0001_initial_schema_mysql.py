@@ -1,3 +1,5 @@
+# LEGACY (MySQL 8). Kept for reference only: Alembic loads migrations from alembic/versions/,
+# not this folder. The project moved to PostgreSQL; see alembic/versions/ for the current schema.
 """initial schema: users, roles, people, faces, consent, attendance, scans, audit, settings
 
 Revision ID: 0001

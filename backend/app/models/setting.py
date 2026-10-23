@@ -1,10 +1,11 @@
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import JSON, ForeignKey, String, text
+from sqlalchemy import ForeignKey, String, func
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.db.base import TABLE_ARGS, Base, BigId
+from app.db.base import Base, BigId
 from app.db.types import UTCDateTime, utcnow
 
 
@@ -12,13 +13,12 @@ class SystemSetting(Base):
     """Runtime-tunable settings (thresholds, attendance rules, retention)."""
 
     __tablename__ = "system_settings"
-    __table_args__ = TABLE_ARGS
 
     key: Mapped[str] = mapped_column(String(64), primary_key=True)
-    value: Mapped[Any] = mapped_column(JSON)
+    value: Mapped[Any] = mapped_column(JSONB)
     updated_by: Mapped[int | None] = mapped_column(BigId, ForeignKey("users.id", ondelete="SET NULL"))
     updated_at: Mapped[datetime] = mapped_column(
-        UTCDateTime, default=utcnow, onupdate=utcnow, server_default=text("CURRENT_TIMESTAMP(6)")
+        UTCDateTime, default=utcnow, onupdate=utcnow, server_default=func.now()
     )
 
 

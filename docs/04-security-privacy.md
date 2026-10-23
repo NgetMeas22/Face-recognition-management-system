@@ -12,7 +12,7 @@
 | Malicious uploads | Size cap enforced while streaming. Content sniffed with Pillow (`JPEG`/`PNG` only). `Image.MAX_IMAGE_PIXELS` bound against decompression bombs. Images are re-decoded, never served back as uploaded. Random file IDs, stored outside the web root. Photos are served only through an authorised endpoint with `Content-Type` forced and `nosniff`. | 4 |
 | Scan endpoint abuse / brute force | Per-user rate limits (frames: 4/s, uploads: 10/min). Every decision is logged in scan_events. | 4 |
 | Theft of the DB or a backup | Templates and photos are AES‑256‑GCM encrypted. Keys live only in environment variables, never in the DB or git. `key_id` columns allow key rotation. | 4 |
-| Data in transit | HTTPS in any non-localhost deployment. Browsers only allow camera access on HTTPS or `localhost`, so a LAN kiosk needs TLS (Phase 7 covers Laragon SSL or a Caddy reverse proxy). HSTS and security headers (CSP, `X-Frame-Options: DENY`, `Referrer-Policy`). | 6–7 |
+| Data in transit | HTTPS in any non-localhost deployment. Browsers only allow camera access on HTTPS or `localhost`, so a LAN kiosk needs TLS (Phase 7 covers a TLS reverse proxy such as Caddy). HSTS and security headers (CSP, `X-Frame-Options: DENY`, `Referrer-Policy`). | 6–7 |
 | Insider misuse | Audit log for every admin action, profile change, face enrollment or deletion, attendance correction, settings change, and failed login. Admin-only audit viewer. | 6 |
 | CSV/Excel formula injection | Cells starting with `= + - @` (or tab/CR) are prefixed with `'` on export. | 6 |
 | Verbose errors | Generic 500 responses with a `request_id`. Stack traces only in server logs. | 2 |

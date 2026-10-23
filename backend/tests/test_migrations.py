@@ -1,15 +1,15 @@
-"""The migration must match the models, and must downgrade/upgrade cleanly on MySQL."""
+"""The migration must match the models, and must downgrade/upgrade cleanly on PostgreSQL."""
 
 from alembic import command
 from sqlalchemy import create_engine, inspect
 
 from app.db.base import Base
-from tests.conftest import _test_url, alembic_config, recreate_database
+from tests.conftest import _test_url, alembic_config, reset_schema
 
 
 def test_upgrade_check_downgrade_roundtrip() -> None:
     url = _test_url("facetrack_test_mig")
-    recreate_database(url)
+    reset_schema(url)
     config = alembic_config(url)
     engine = create_engine(url)
     try:

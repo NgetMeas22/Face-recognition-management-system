@@ -7,8 +7,8 @@ email-validator==2.3.0
 python-multipart==0.0.32
 SQLAlchemy==2.1.6
 alembic==1.20.1
-PyMySQL==1.2.3
-cryptography==50.0.2   # needed by PyMySQL for MySQL 8 caching_sha2_password; AES-GCM later
+psycopg[binary]==3.3.6  # PostgreSQL driver (psycopg 3, bundled libpq: no PostgreSQL client install needed)
+cryptography==50.0.2   # AES-256-GCM for face templates (Phase 4)
 PyJWT==2.15.1
 pwdlib[argon2]==0.3.1
 tzdata==2026.5         # Windows has no system timezone database

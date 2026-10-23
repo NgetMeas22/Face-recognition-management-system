@@ -135,7 +135,10 @@ test.describe("administrator", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await expect(page.locator("[data-sidebar=sidebar]").first()).toBeHidden();
     await page.getByRole("button", { name: "Toggle navigation" }).click();
-    await expect(page.getByRole("dialog").getByRole("link", { name: "Face Scanner" })).toBeVisible();
+    const drawer = page.getByRole("dialog");
+    await expect(drawer.getByRole("link", { name: "Face Scanner" })).toBeVisible();
+    await expect(drawer).toHaveAttribute("data-state", "open");
+    await page.waitForTimeout(600); // let the slide-in animation finish before the screenshot
     await page.screenshot({ path: `${SCREENS}/mobile-nav-dark.png` });
     await page.keyboard.press("Escape");
     await page.setViewportSize({ width: 1280, height: 800 });

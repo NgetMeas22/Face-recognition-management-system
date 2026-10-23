@@ -4,9 +4,13 @@
 
 ```mermaid
 flowchart LR
-    subgraph Browser["Browser (React SPA)"]
-        UI[Pages & components]
+    subgraph Browser["Browser"]
+        UI[Next.js pages & components]
         CAM[Webcam via getUserMedia]
+    end
+
+    subgraph Next["Next.js server :3000"]
+        P[Rewrite proxy /api/v1/* → :8000]
     end
 
     subgraph API["FastAPI backend (single process)"]
@@ -22,8 +26,9 @@ flowchart LR
     FS[(storage/\nencrypted photos)]
     M[(ml_models/\nYuNet + SFace ONNX)]
 
-    UI -- HTTPS JSON + Bearer JWT --> R
-    CAM -- JPEG frames --> R
+    UI -- same-origin JSON + Bearer JWT --> P
+    CAM -- JPEG frames --> P
+    P --> R
     R --> D --> S
     R --> F
     F --> G
@@ -33,7 +38,7 @@ flowchart LR
     G -. loaded & decrypted at startup / on change .- DB
 ```
 
-**Request path:** React → `/api/v1/...` → JWT + permission check → router → service → SQLAlchemy → MySQL.
+**Request path:** browser → Next.js `/api/v1/...` (same-origin rewrite proxy) → FastAPI → JWT + permission check → router → service → SQLAlchemy → MySQL.
 Face endpoints additionally pass the image through the face engine, which compares the embedding
 against an in-memory gallery of decrypted templates.
 
@@ -47,6 +52,7 @@ against an in-memory gallery of decrypted templates.
 | **Embeddings compared in memory** | 10 000 people × 5 templates × 128 floats ≈ 25 MB; a matrix dot product takes milliseconds. No vector DB needed at this scale. |
 | **Single backend process** | The gallery cache lives in process memory. Multi-worker deployment would need a cache-invalidation signal (documented in Phase 7). |
 | **REST, not WebSockets, for live scanning** | The browser sends ~2 frames/second to a scan *session*; easy to rate-limit, test and log. |
+| **Next.js App Router frontend behind a same-origin proxy** | The browser only talks to `:3000`; Next.js rewrites `/api/v1/*` to FastAPI. The refresh cookie stays first-party (`SameSite=Strict` works), no CORS is needed in normal use, and the backend URL is a server-only setting. Auth stays entirely in FastAPI; Next.js holds no secrets and no session of its own. |
 | **Argon2 via `pwdlib`, JWT via `PyJWT`** | The libraries FastAPI's current docs recommend; `passlib` is unmaintained. |
 
 ## 1.2 Folder structure
@@ -119,24 +125,21 @@ FaceTrack AI — Face Recognition & People Management System/
 │       ├── unit/                      # face/quality/matcher/crypto
 │       └── api/                       # endpoint + permission tests
 │
-└── frontend/
-    ├── package.json  vite.config.ts  tsconfig.json  index.html
-    ├── .env.example                   # VITE_API_BASE_URL
+└── frontend/                          # Next.js 16 App Router — see frontend/README.md
+    ├── package.json  next.config.ts   # rewrite proxy + security headers
+    ├── .env.example                   # BACKEND_URL (server-only), E2E_* test accounts
+    ├── e2e/                           # Playwright tests (Edge, fake webcam)
     └── src/
-        ├── main.tsx  App.tsx  routes.tsx
-        ├── api/                       # fetch client, token refresh, typed endpoints
-        ├── auth/                      # AuthProvider, RequireAuth, usePermission
+        ├── app/                       # (auth)/login, (app)/<page>/page.tsx, error.tsx
         ├── components/
-        │   ├── layout/                # Sidebar, Topbar, AppShell, ThemeToggle
-        │   └── ui/                    # Button, Input, Card, Badge, DataTable,
-        │                              # Pagination, Modal, EmptyState, Spinner
-        ├── features/
-        │   ├── dashboard/  people/  faces/  scanner/
-        │   ├── attendance/  scans/  reports/
-        │   ├── users/  settings/
-        ├── i18n/                      # en.json, km.json, i18next setup
-        ├── hooks/  lib/  types/
-        └── styles/index.css           # Tailwind entry, theme tokens, Khmer font
+        │   ├── auth/                  # AuthProvider, RequireAuth, RequirePermission
+        │   ├── layout/                # AppShell, AppSidebar, Topbar, ThemeToggle, UserMenu
+        │   ├── camera/                # CameraPanel, ImageDropzone, OutcomeLegend
+        │   ├── common/                # DataTable (TanStack Table), StatCard, PlannedFeature
+        │   └── ui/                    # shadcn/ui (Radix) components
+        ├── features/<page>/           # one view per page
+        ├── hooks/                     # useCamera, useImageList, useApiQuery
+        └── lib/api/                   # schema.d.ts (generated from /openapi.json), client, endpoints
 ```
 
 **Layering rules**
@@ -195,21 +198,23 @@ All routes are prefixed with `/api/v1`. "→ audit" means the action writes an `
 
 ## 1.5 Frontend page map
 
+Implemented in the Next.js frontend (status per page: [frontend/README.md](../frontend/README.md#pages-and-what-works-today)):
+
 | # | Page | Route | Required permission |
 |---|------|-------|---------------------|
 | 1 | Login | `/login` | — |
-| 2 | Dashboard | `/` | `reports.read` |
-| 3 | People list | `/people` | `people.read` |
-| 4 | Create / edit person | `/people/new`, `/people/:id/edit` | `people.write` |
-| 5 | Person details | `/people/:id` | `people.read` |
-| 6 | Face registration | `/people/:id/faces` | `faces.enroll` |
-| 7 | Live scanner | `/scan/live` | `scan.run` |
-| 8 | Upload scanner | `/scan/upload` | `scan.run` |
-| 9 | Attendance | `/attendance` | `attendance.read` |
-| 10 | Scan history | `/scans` | `scan.run` or `audit.read` |
-| 11 | Reports | `/reports` | `reports.read` |
-| 12 | Users & roles | `/admin/users`, `/admin/roles` | `users.manage` |
-| 13 | Settings, consent & retention | `/settings` | `settings.manage` |
+| 2 | Dashboard | `/dashboard` (`/` redirects) | `reports.read` |
+| 3 | Employees & students | `/people` | `people.read` |
+| 4 | Departments & classes | `/departments` | `people.read` |
+| 5 | Face registration | `/faces` | `faces.enroll` |
+| 6 | Face scanner (live + upload tabs) | `/scanner` | `scan.run` |
+| 7 | Scan history | `/scans` | `scan.run` or `audit.read` |
+| 8 | Attendance | `/attendance` | `attendance.read` |
+| 9 | Reports | `/reports` | `reports.read` |
+| 10 | Settings (account, theme, roles, system; consent & retention for `settings.manage`) | `/settings` | signed in |
+
+Still to come, once their backend endpoints exist: create/edit person (`/people/new`, `/people/[id]/edit`),
+person details (`/people/[id]`), and user management (`users.manage`).
 
 **UI conventions:** Light and dark themes come from CSS variables, with a Tailwind `dark` variant
 toggled by a class. Result colours are green = match, amber = needs review, red = no match/error.
@@ -229,7 +234,7 @@ These are defined in `backend/.env.example` in Phase 2 and read by `app/core/con
 | `REFRESH_TOKEN_DAYS` | `7` | Refresh cookie lifetime |
 | `TEMPLATE_KEY_ID` / `TEMPLATE_KEYS` | `k1` / `k1:<base64 32 bytes>` | Face-template encryption keys (supports rotation) |
 | `FILE_KEY_ID` / `FILE_KEYS` | `f1` / `f1:<base64 32 bytes>` | Photo encryption keys |
-| `CORS_ORIGINS` | `http://localhost:5173` | Allowed frontend origins |
+| `CORS_ORIGINS` | `http://localhost:3000,http://127.0.0.1:3000` | Origins allowed to call the API directly (the Next.js proxy is same-origin and doesn't need it) |
 | `MODEL_DIR` | `ml_models` | ONNX model location |
 | `MAX_UPLOAD_MB` | `5` | Upload size cap |
 | `TIMEZONE` | `Asia/Phnom_Penh` | Local timezone for attendance dates |

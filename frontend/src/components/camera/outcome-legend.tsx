@@ -27,17 +27,20 @@ export const OUTCOMES = [
 ] as const;
 
 export function OutcomeLegend() {
+  // Sized by its container (not the viewport), so it also fits narrow side panels.
   return (
-    <ul className="grid gap-2 sm:grid-cols-3" aria-label="Scan result types">
-      {OUTCOMES.map(({ key, label, description, icon: Icon, className }) => (
-        <li key={key} className={`flex gap-2 rounded-lg border p-3 ${className}`}>
-          <Icon className="mt-0.5 size-4 shrink-0" aria-hidden />
-          <div>
-            <p className="text-sm font-medium">{label}</p>
-            <p className="text-xs text-foreground/70">{description}</p>
-          </div>
-        </li>
-      ))}
-    </ul>
+    <div className="@container">
+      <ul className="grid gap-2 @2xl:grid-cols-3" aria-label="Scan result types">
+        {OUTCOMES.map(({ key, label, description, icon: Icon, className }) => (
+          <li key={key} className={`flex gap-2 rounded-lg border p-3 ${className}`}>
+            <Icon className="mt-0.5 size-4 shrink-0" aria-hidden />
+            <div>
+              <p className="text-sm font-medium">{label}</p>
+              <p className="text-xs text-foreground/70">{description}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

@@ -19,7 +19,6 @@ import { CameraPanel } from "@/components/camera/camera-panel";
 import { ImageDropzone } from "@/components/camera/image-dropzone";
 import { OutcomeLegend } from "@/components/camera/outcome-legend";
 import { PageHeader } from "@/components/common/page-header";
-import { PlannedFeature } from "@/components/common/planned-feature";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,7 +35,6 @@ export function ScannerView() {
   const [tab, setTab] = useState("live");
   const { isKhmer, t } = useI18n();
 
-  // Simulated demonstration/interactive outcome state for previewing the workflow
   const [scanOutcome, setScanOutcome] = useState<ScanOutcomeType>("IDLE");
   const [isScanning, setIsScanning] = useState(false);
   const [manualVerified, setManualVerified] = useState(false);
@@ -66,15 +64,14 @@ export function ScannerView() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title={t.scanner.title}
         description={t.scanner.subtitle}
-        availability="partial"
       />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-        {/* Left Column: Input Source (Live Camera or Upload) */}
+        {/* Left Column: Input Source */}
         <div className="space-y-4">
           <Tabs value={tab} onValueChange={(val) => { setTab(val); setScanOutcome("IDLE"); }}>
             <TabsList className="grid w-full grid-cols-2 max-w-xs h-9">
@@ -126,7 +123,7 @@ export function ScannerView() {
             </TabsContent>
           </Tabs>
 
-          {/* Snapshot & Trigger Actions */}
+          {/* Snapshot & Actions */}
           {activeImage && (
             <Card className="border-border/80 shadow-xs">
               <CardHeader className="pb-3">
@@ -157,7 +154,7 @@ export function ScannerView() {
                   <img
                     src={activeImage.url}
                     alt="Scan preview"
-                    className="max-h-72 w-full object-contain mx-auto"
+                    className="max-h-64 w-full object-contain mx-auto"
                     data-testid="scan-preview"
                   />
                 </div>
@@ -195,7 +192,7 @@ export function ScannerView() {
           )}
         </div>
 
-        {/* Right Column: Recognition Result, Details, & Manual Review */}
+        {/* Right Column: Result & Legend */}
         <div className="space-y-4">
           <Card className="border-border/80 shadow-xs">
             <CardHeader className="pb-3 border-b border-border/40">
@@ -238,10 +235,10 @@ export function ScannerView() {
                 </div>
               )}
 
-              {/* Match Confirmed Profile */}
+              {/* Match Confirmed */}
               {(scanOutcome === "MATCH" || manualVerified) && (
                 <div className="space-y-4">
-                  <div className="flex items-start gap-3 rounded-xl border border-success/30 bg-success/10 p-3.5 text-success">
+                  <div className="flex items-start gap-3 rounded-xl border border-success/30 bg-success/10 p-3 text-success">
                     <CheckCircle2 className="size-5 shrink-0 mt-0.5" />
                     <div className="space-y-0.5">
                       <p className="text-xs font-bold">{t.scanner.match}</p>
@@ -249,10 +246,9 @@ export function ScannerView() {
                     </div>
                   </div>
 
-                  {/* Profile Card */}
-                  <div className="rounded-xl border border-border/80 bg-muted/20 p-4 space-y-3">
+                  <div className="rounded-xl border border-border/80 bg-muted/20 p-3.5 space-y-3">
                     <div className="flex items-center gap-3">
-                      <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary font-bold text-base border border-primary/20">
+                      <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary font-bold text-sm border border-primary/20">
                         JD
                       </div>
                       <div className="space-y-0.5">
@@ -275,10 +271,10 @@ export function ScannerView() {
                 </div>
               )}
 
-              {/* Needs Review with Manual Verification */}
+              {/* Needs Review */}
               {scanOutcome === "REVIEW" && !manualVerified && (
                 <div className="space-y-4">
-                  <div className="flex items-start gap-3 rounded-xl border border-warning/40 bg-warning/15 p-3.5 text-warning-foreground dark:text-warning">
+                  <div className="flex items-start gap-3 rounded-xl border border-warning/40 bg-warning/15 p-3 text-warning-foreground dark:text-warning">
                     <HelpCircle className="size-5 shrink-0 mt-0.5" />
                     <div className="space-y-0.5">
                       <p className="text-xs font-bold">{t.scanner.needsReview}</p>
@@ -286,7 +282,7 @@ export function ScannerView() {
                     </div>
                   </div>
 
-                  <div className="rounded-xl border border-border/80 bg-muted/20 p-4 space-y-3">
+                  <div className="rounded-xl border border-border/80 bg-muted/20 p-3.5 space-y-3">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-muted-foreground">{t.scanner.similarityScore}</span>
                       <span className="font-mono font-semibold text-warning-foreground dark:text-warning">0.74 (Uncertain)</span>
@@ -309,10 +305,10 @@ export function ScannerView() {
                 </div>
               )}
 
-              {/* Unknown Face / No Match */}
+              {/* Unknown Face */}
               {scanOutcome === "NO_MATCH" && (
                 <div className="space-y-4">
-                  <div className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-3.5 text-destructive">
+                  <div className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-destructive">
                     <UserX className="size-5 shrink-0 mt-0.5" />
                     <div className="space-y-0.5">
                       <p className="text-xs font-bold">{t.scanner.noMatch}</p>
@@ -320,7 +316,6 @@ export function ScannerView() {
                     </div>
                   </div>
 
-                  {/* Privacy Guard Notice */}
                   <div className="rounded-xl border border-border/80 bg-muted/20 p-3 text-xs flex items-start gap-2.5 text-muted-foreground">
                     <ShieldAlert className="size-4 shrink-0 text-muted-foreground mt-0.5" />
                     <span>{t.scanner.privacyNotice}</span>
@@ -330,31 +325,16 @@ export function ScannerView() {
             </CardContent>
           </Card>
 
-          {/* Outcome Legend Card */}
           <Card className="border-border/80 shadow-xs">
-            <CardHeader className="pb-3">
+            <CardHeader className="pb-3 border-b border-border/40">
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                {isKhmer ? "លទ្ធផលដែលអាចកើតមាន" : "Scan Result Types"}
+                {isKhmer ? "លទ្ធផលស្កេន" : "Scan Result Types"}
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-3">
               <OutcomeLegend />
             </CardContent>
           </Card>
-
-          <PlannedFeature
-            phase="Phase 4"
-            endpoints={[
-              "POST /scan/live/sessions",
-              "POST /scan/live/sessions/{sid}/frames",
-              "POST /scan/image",
-              "POST /scan/events/{id}/review",
-            ]}
-          >
-            {isKhmer
-              ? "ម៉ាស៊ីនថត និងការចាប់រូបភាពដំណើរការក្នុងកម្មវិធីរុករក។ ការបញ្ជូនរូបភាពដើម្បីផ្ទៀងផ្ទាត់នឹងភ្ជាប់ជាមួយ Scan API ខាងក្រោយ។"
-              : "Camera framing and image capture are active locally. Live recognition inferences will link to backend endpoints."}
-          </PlannedFeature>
         </div>
       </div>
     </div>

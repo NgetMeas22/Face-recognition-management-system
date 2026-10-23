@@ -2,16 +2,13 @@
 
 import type { ReactNode } from "react";
 
-/**
- * Kept for architectural compatibility, but returns null so technical
- * endpoint listings and internal phase notes do not clutter the production UI.
- */
-export function PlannedFeature({
-  children,
-}: {
+export type PlannedFeatureProps = {
   phase?: string;
   endpoints?: string[];
   children?: ReactNode;
-}) {
+};
+
+export function PlannedFeature(props?: PlannedFeatureProps): null {
+  void props;
   return null;
 }

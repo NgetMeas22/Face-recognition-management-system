@@ -3,6 +3,7 @@
 import { ShieldAlert } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { PageSkeleton } from "@/components/common/page-skeleton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { PermissionRequirement } from "@/lib/permissions";
 import { useAuth } from "./auth-provider";
@@ -14,7 +15,11 @@ function describe(requirement: PermissionRequirement): string {
   return parts.join("; ");
 }
 
-/** Renders children only when the signed-in user meets `requires`; otherwise an explanation. */
+/**
+ * Renders children only when the signed-in user meets `requires`; otherwise an explanation.
+ * While the session is still being restored (and in the prerendered shell) it shows a page
+ * skeleton, or nothing for inline uses with a `fallback`, so views never mount unauthenticated.
+ */
 export function RequirePermission({
   requires,
   children,
@@ -25,7 +30,8 @@ export function RequirePermission({
   /** Inline fallback; defaults to a full "access denied" card. Pass null to render nothing. */
   fallback?: ReactNode;
 }) {
-  const { allows, user } = useAuth();
+  const { status, allows, user } = useAuth();
+  if (status !== "authenticated") return fallback !== undefined ? null : <PageSkeleton />;
   if (allows(requires)) return <>{children}</>;
   if (fallback !== undefined) return <>{fallback}</>;
 

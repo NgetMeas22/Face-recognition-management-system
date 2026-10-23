@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
+
+import { useLocaleRouter } from "@/lib/i18n";
 
 export default function UsersRedirectPage() {
-  const router = useRouter();
+  const router = useLocaleRouter();
 
   useEffect(() => {
     router.replace("/settings?tab=users");

@@ -1,7 +1,6 @@
 "use client";
 
 import { KeyRound, LogOut, Settings } from "lucide-react";
-import Link from "next/link";
 import { useState } from "react";
 
 import { useAuth } from "@/components/auth/auth-provider";
@@ -15,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useI18n } from "@/lib/i18n";
+import { LocaleLink, useI18n } from "@/lib/i18n";
 
 function initials(name: string): string {
   return name
@@ -51,14 +50,14 @@ export function UserMenu() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/settings">
+          <LocaleLink href="/settings">
             <Settings className="size-4" aria-hidden /> {t.nav.settings}
-          </Link>
+          </LocaleLink>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/settings#account">
+          <LocaleLink href="/settings#account">
             <KeyRound className="size-4" aria-hidden /> {t.settings.changePasswordTitle}
-          </Link>
+          </LocaleLink>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem

@@ -6,7 +6,6 @@ import { useMemo } from "react";
 import { OutcomeLegend } from "@/components/camera/outcome-legend";
 import { DataTable, type DataTableFeatures } from "@/components/common/data-table";
 import { PageHeader } from "@/components/common/page-header";
-import { PlannedFeature } from "@/components/common/planned-feature";
 import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/lib/i18n";
 
@@ -82,21 +81,14 @@ export function ScansView() {
   }, [isKhmer, t]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title={t.scans.title}
         description={t.scans.subtitle}
-        availability="planned"
       />
 
       <div className="space-y-4">
         <OutcomeLegend />
-
-        <PlannedFeature phase="Phase 4" endpoints={["GET /scan/events?outcome=&from=&to=&page="]}>
-          {isKhmer
-            ? "ប្រវត្តិស្កេនផ្ទៃមុខ និងការសម្រេចចិត្តទាំងអស់នឹងបង្ហាញនៅទីនេះពេល Scan Event API ត្រូវបានបើកដំណើរការ។"
-            : "Every facial verification event will be recorded in this audit stream once the Scan events backend is connected."}
-        </PlannedFeature>
 
         <DataTable
           caption={t.scans.title}

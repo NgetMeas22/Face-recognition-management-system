@@ -19,7 +19,6 @@ import { Suspense, useState } from "react";
 import { useAuth } from "@/components/auth/auth-provider";
 import { RequirePermission } from "@/components/auth/require-permission";
 import { PageHeader } from "@/components/common/page-header";
-import { PlannedFeature } from "@/components/common/planned-feature";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -113,14 +112,13 @@ function SettingsContent() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title={t.settings.title}
         description={t.settings.subtitle}
-        availability="live"
       />
 
-      <Tabs value={tab} onValueChange={setTab} className="space-y-6">
+      <Tabs value={tab} onValueChange={setTab} className="space-y-5">
         <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 max-w-xl h-9">
           <TabsTrigger value="account" className="text-xs font-semibold gap-1.5">
             <User className="size-3.5" />
@@ -141,27 +139,27 @@ function SettingsContent() {
         </TabsList>
 
         {/* Tab 1: Account & Password */}
-        <TabsContent value="account" className="space-y-6">
+        <TabsContent value="account" className="space-y-4">
           <Card className="border-border/80 shadow-xs" id="account">
-            <CardHeader className="pb-4 border-b border-border/40">
-              <CardTitle className="text-base font-semibold">{t.settings.accountTitle}</CardTitle>
+            <CardHeader className="pb-3 border-b border-border/40">
+              <CardTitle className="text-sm font-semibold">{t.settings.accountTitle}</CardTitle>
               <CardDescription className="text-xs">{t.settings.accountDesc}</CardDescription>
             </CardHeader>
-            <CardContent className="pt-6 grid gap-8 lg:grid-cols-2">
-              <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-1 py-2 border-b border-border/40 text-xs">
+            <CardContent className="pt-5 grid gap-6 lg:grid-cols-2">
+              <div className="space-y-3">
+                <div className="grid grid-cols-3 gap-1 py-1.5 border-b border-border/40 text-xs">
                   <span className="text-muted-foreground">{t.settings.fullName}</span>
                   <span className="col-span-2 font-medium text-foreground">{user?.full_name}</span>
                 </div>
-                <div className="grid grid-cols-3 gap-1 py-2 border-b border-border/40 text-xs">
+                <div className="grid grid-cols-3 gap-1 py-1.5 border-b border-border/40 text-xs">
                   <span className="text-muted-foreground">{t.common.username}</span>
                   <span className="col-span-2 font-mono text-foreground">@{user?.username}</span>
                 </div>
-                <div className="grid grid-cols-3 gap-1 py-2 border-b border-border/40 text-xs">
+                <div className="grid grid-cols-3 gap-1 py-1.5 border-b border-border/40 text-xs">
                   <span className="text-muted-foreground">{t.common.email}</span>
                   <span className="col-span-2 text-foreground">{user?.email}</span>
                 </div>
-                <div className="grid grid-cols-3 gap-1 py-2 border-b border-border/40 text-xs">
+                <div className="grid grid-cols-3 gap-1 py-1.5 border-b border-border/40 text-xs">
                   <span className="text-muted-foreground">{t.common.role}</span>
                   <span className="col-span-2">
                     <Badge variant="secondary" className="text-[11px] font-semibold">
@@ -169,7 +167,7 @@ function SettingsContent() {
                     </Badge>
                   </span>
                 </div>
-                <div className="grid grid-cols-3 gap-1 py-2 text-xs">
+                <div className="grid grid-cols-3 gap-1 py-1.5 text-xs">
                   <span className="text-muted-foreground">{isKhmer ? "ចូលចុងក្រោយ" : "Last sign-in"}</span>
                   <span className="col-span-2 text-muted-foreground">
                     {user?.last_login_at ? new Date(user.last_login_at).toLocaleString() : "—"}
@@ -177,9 +175,9 @@ function SettingsContent() {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-border/80 bg-muted/20 p-5 space-y-3">
-                <div className="flex items-center gap-2 text-foreground font-semibold text-sm">
-                  <Lock className="size-4 text-primary" />
+              <div className="rounded-xl border border-border/80 bg-muted/20 p-4 space-y-3">
+                <div className="flex items-center gap-2 text-foreground font-semibold text-xs">
+                  <Lock className="size-3.5 text-primary" />
                   <h3>{t.settings.changePasswordTitle}</h3>
                 </div>
                 <ChangePasswordForm />
@@ -188,10 +186,9 @@ function SettingsContent() {
           </Card>
         </TabsContent>
 
-        {/* Tab 2: General (Language & Appearance) */}
-        <TabsContent value="general" className="space-y-6">
+        {/* Tab 2: Preferences (Language & Appearance) */}
+        <TabsContent value="general" className="space-y-4">
           <div className="grid gap-6 md:grid-cols-2">
-            {/* Language Switcher Card */}
             <Card className="border-border/80 shadow-xs">
               <CardHeader className="pb-3 border-b border-border/40">
                 <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -230,7 +227,6 @@ function SettingsContent() {
               </CardContent>
             </Card>
 
-            {/* Appearance Card */}
             <Card className="border-border/80 shadow-xs">
               <CardHeader className="pb-3 border-b border-border/40">
                 <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -261,7 +257,7 @@ function SettingsContent() {
         </TabsContent>
 
         {/* Tab 3: User Management & Roles */}
-        <TabsContent value="users" className="space-y-6">
+        <TabsContent value="users" className="space-y-4">
           <RequirePermission
             requires={{ all: [Perm.ROLES_MANAGE] }}
             fallback={
@@ -283,7 +279,7 @@ function SettingsContent() {
           >
             <Card className="border-border/80 shadow-xs">
               <CardHeader className="pb-3 border-b border-border/40">
-                <CardTitle className="text-base font-semibold">{t.settings.rolesTitle}</CardTitle>
+                <CardTitle className="text-sm font-semibold">{t.settings.rolesTitle}</CardTitle>
                 <CardDescription className="text-xs">{t.settings.rolesDesc}</CardDescription>
               </CardHeader>
               <CardContent className="pt-4">
@@ -294,41 +290,16 @@ function SettingsContent() {
         </TabsContent>
 
         {/* Tab 4: System & Diagnostics */}
-        <TabsContent value="system" className="space-y-6">
+        <TabsContent value="system" className="space-y-4">
           <Card className="border-border/80 shadow-xs">
             <CardHeader className="pb-3 border-b border-border/40">
               <CardTitle className="text-sm font-semibold">{t.settings.systemTitle}</CardTitle>
               <CardDescription className="text-xs">{t.settings.systemDesc}</CardDescription>
             </CardHeader>
-            <CardContent className="pt-4 space-y-4">
+            <CardContent className="pt-4">
               <SystemStatus />
             </CardContent>
           </Card>
-
-          <RequirePermission requires={{ all: [Perm.SETTINGS_MANAGE] }} fallback={null}>
-            <Card className="border-border/80 shadow-xs">
-              <CardHeader className="pb-3 border-b border-border/40">
-                <CardTitle className="text-sm font-semibold">
-                  {isKhmer ? "ការកំណត់ការស្គាល់មុខ និងរក្សាទុកទិន្នន័យ" : "Recognition & Data Retention"}
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  {isKhmer
-                    ? "កម្រិតពិន្ទុភាពដូចគ្នា រយៈពេលស្កេនស្ទួន និងគោលការណ៍រក្សាទុកទិន្នន័យ។"
-                    : "Thresholds, duplicate prevention window, and data retention policies."}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <PlannedFeature
-                  phase="Phase 6"
-                  endpoints={["GET /settings", "PATCH /settings", "POST /settings/retention/run"]}
-                >
-                  {isKhmer
-                    ? "តម្លៃលំនាំដើមត្រូវបានកំណត់ក្នុង system_settings រួចរាល់ហើយ ដោយរង់ចាំ API សម្រាប់ធ្វើបច្ចុប្បន្នភាព។"
-                    : "Default thresholds are stored in the database and will be configurable when the Settings API is connected."}
-                </PlannedFeature>
-              </CardContent>
-            </Card>
-          </RequirePermission>
         </TabsContent>
       </Tabs>
     </div>

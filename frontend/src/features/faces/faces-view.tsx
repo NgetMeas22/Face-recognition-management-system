@@ -6,7 +6,6 @@ import { CameraPanel } from "@/components/camera/camera-panel";
 import { ImageDropzone } from "@/components/camera/image-dropzone";
 import { ImageThumb } from "@/components/camera/image-thumb";
 import { PageHeader } from "@/components/common/page-header";
-import { PlannedFeature } from "@/components/common/planned-feature";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -18,8 +17,8 @@ const MAX_IMAGES = 5;
 
 function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
   return (
-    <section className="space-y-3" aria-labelledby={`step-${n}`}>
-      <h2 id={`step-${n}`} className="flex items-center gap-2.5 text-xs sm:text-sm font-semibold text-foreground">
+    <section className="space-y-2.5" aria-labelledby={`step-${n}`}>
+      <h2 id={`step-${n}`} className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-foreground">
         <span className="flex size-5 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground shadow-xs">
           {n}
         </span>
@@ -32,25 +31,24 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
 
 export function FacesView() {
   const images = useImageList(MAX_IMAGES);
-  const { isKhmer, t } = useI18n();
+  const { t } = useI18n();
 
   const tips = [t.faces.tip1, t.faces.tip2, t.faces.tip3, t.faces.tip4];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title={t.faces.title}
         description={t.faces.subtitle}
-        availability="partial"
       />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <Card className="border-border/80 shadow-xs">
-          <CardHeader className="pb-4 border-b border-border/40">
-            <CardTitle className="text-base font-semibold">{t.faces.title}</CardTitle>
+          <CardHeader className="pb-3 border-b border-border/40">
+            <CardTitle className="text-sm font-semibold">{t.faces.title}</CardTitle>
             <CardDescription className="text-xs">{t.faces.subtitle}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6 pt-6">
+          <CardContent className="space-y-5 pt-5">
             <Step n={1} title={t.faces.step1}>
               <Select disabled>
                 <SelectTrigger className="w-full sm:w-80 h-9 text-xs" aria-label="Person">
@@ -62,16 +60,16 @@ export function FacesView() {
             </Step>
 
             <Step n={2} title={t.faces.step2}>
-              <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
-                <p className="flex items-start gap-2 text-xs text-muted-foreground">
-                  <ShieldCheck className="mt-0.5 size-4 shrink-0 text-success" aria-hidden />
+              <div className="rounded-lg border border-border/60 bg-muted/20 p-2.5">
+                <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <ShieldCheck className="size-4 shrink-0 text-success" aria-hidden />
                   <span>{t.faces.consentNotice}</span>
                 </p>
               </div>
             </Step>
 
             <Step n={3} title={`${t.faces.step3} (${images.items.length}/${MAX_IMAGES})`}>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <div className="flex items-center gap-3">
                   <Progress value={(images.items.length / MAX_IMAGES) * 100} className="h-2 flex-1" aria-label="Images collected" />
                   <span className="text-xs font-semibold tabular-nums text-muted-foreground">
@@ -130,38 +128,32 @@ export function FacesView() {
             </Step>
 
             <Step n={4} title={t.faces.step4}>
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button disabled className="h-8 gap-1.5 text-xs font-semibold">
-                    <Upload className="size-3.5" aria-hidden />
-                    {t.faces.submitApproval} ({images.items.length})
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={images.clear}
-                    disabled={images.items.length === 0}
-                    className="h-8 text-xs"
-                  >
-                    {t.common.clear}
-                  </Button>
-                </div>
-                <p className="text-[11px] text-muted-foreground">{t.faces.privacyNote}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button disabled className="h-8 gap-1.5 text-xs font-semibold">
+                  <Upload className="size-3.5" aria-hidden />
+                  {t.faces.submitApproval} ({images.items.length})
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={images.clear}
+                  disabled={images.items.length === 0}
+                  className="h-8 text-xs"
+                >
+                  {t.faces.clearAll}
+                </Button>
               </div>
             </Step>
           </CardContent>
         </Card>
 
-        {/* Guidelines and Planned Info Sidebar */}
-        <div className="space-y-4">
+        {/* Guidelines Sidebar */}
+        <div>
           <Card className="border-border/80 shadow-xs">
-            <CardHeader className="pb-3">
+            <CardHeader className="pb-3 border-b border-border/40">
               <CardTitle className="text-sm font-semibold">{t.faces.tipsTitle}</CardTitle>
-              <CardDescription className="text-xs">
-                {isKhmer ? "រូបថតច្បាស់បង្កើនប្រសិទ្ធភាពនៃការស្គាល់មុខ" : "Optimizes biometric feature extraction."}
-              </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-3">
               <ul className="space-y-2 text-xs text-muted-foreground">
                 {tips.map((tip, i) => (
                   <li key={i} className="flex items-start gap-2">
@@ -172,20 +164,6 @@ export function FacesView() {
               </ul>
             </CardContent>
           </Card>
-
-          <PlannedFeature
-            phase="Phases 3–4"
-            endpoints={[
-              "GET /people",
-              "POST /people/{id}/consents",
-              "POST /people/{id}/faces",
-              "POST /faces/{id}/approve",
-            ]}
-          >
-            {isKhmer
-              ? "ការថត និងជ្រើសរើសរូបថតដំណើរការរួចរាល់ហើយ។ ការបញ្ជូនទិន្នន័យដើម្បីទាញយក Biometric Embeddings នឹងដំណើរការពេល Faces API រួចរាល់។"
-              : "Frame capture and local validation are active. Enrollment submission will link once Face Embeddings endpoints are deployed."}
-          </PlannedFeature>
         </div>
       </div>
     </div>

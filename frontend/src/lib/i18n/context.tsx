@@ -1,10 +1,14 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { createContext, useCallback, useContext, useEffect, useMemo } from "react";
+
+import { LOCALE_COOKIE, localizePath, stripLocale } from "./routing";
 import { translations, type Locale, type Translations } from "./translations";
 
 interface I18nContextValue {
   locale: Locale;
+  /** Switches language by moving to the same page under the other locale prefix. */
   setLocale: (locale: Locale) => void;
   t: Translations;
   isKhmer: boolean;
@@ -12,50 +16,38 @@ interface I18nContextValue {
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
-const STORAGE_KEY = "facetrack_locale";
-
-function getInitialLocale(): Locale {
-  if (typeof window === "undefined") return "en";
+function rememberLocale(locale: Locale) {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY) as Locale | null;
-    if (stored === "en" || stored === "km") return stored;
-    const navLang = navigator.language?.toLowerCase() ?? "";
-    return navLang.startsWith("km") ? "km" : "en";
+    document.cookie = `${LOCALE_COOKIE}=${locale}; path=/; max-age=31536000; SameSite=Lax`;
   } catch {
-    return "en";
+    // Cookies disabled: the URL still carries the locale.
   }
 }
 
-export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(getInitialLocale);
+/** The locale comes from the URL segment (/en/…, /km/…), so it is known on the server too. */
+export function I18nProvider({ locale, children }: { locale: Locale; children: React.ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    try {
-      document.documentElement.lang = locale;
-    } catch {
-      // Ignore DOM errors in test environments
-    }
+    document.documentElement.lang = locale;
+    rememberLocale(locale);
   }, [locale]);
 
-  const setLocale = (newLocale: Locale) => {
-    setLocaleState(newLocale);
-    try {
-      localStorage.setItem(STORAGE_KEY, newLocale);
-      document.cookie = `${STORAGE_KEY}=${newLocale}; path=/; max-age=31536000; SameSite=Lax`;
-      document.documentElement.lang = newLocale;
-    } catch {
-      // Ignore storage errors
-    }
-  };
+  const setLocale = useCallback(
+    (next: Locale) => {
+      if (next === locale) return;
+      rememberLocale(next);
+      const { path } = stripLocale(pathname);
+      router.replace(localizePath(next, `${path}${window.location.search}${window.location.hash}`));
+    },
+    [locale, pathname, router],
+  );
 
-  const value = useMemo<I18nContextValue>(() => {
-    return {
-      locale,
-      setLocale,
-      t: translations[locale] || translations.en,
-      isKhmer: locale === "km",
-    };
-  }, [locale]);
+  const value = useMemo<I18nContextValue>(
+    () => ({ locale, setLocale, t: translations[locale] ?? translations.en, isKhmer: locale === "km" }),
+    [locale, setLocale],
+  );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

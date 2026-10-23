@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { Perm, type PermissionRequirement } from "./permissions";
+import { stripLocale } from "./i18n/routing";
 import type { Translations } from "./i18n/translations";
 
 /**
@@ -53,6 +54,8 @@ export const NAV_GROUPS = [
   { name: "System", key: "system" },
 ] as const;
 
+/** Matches a pathname, with or without its /en or /km prefix, to its sidebar item. */
 export function navItemFor(pathname: string): NavItem | undefined {
+  pathname = stripLocale(pathname).path;
   return NAV_ITEMS.find((item) => pathname === item.href || pathname.startsWith(`${item.href}/`));
 }

@@ -1,28 +1,29 @@
 "use client";
 
-import { Loader2, ServerCrash } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
+import { ServerCrash } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
+import { stripLocale, useLocaleRouter } from "@/lib/i18n";
 import { useAuth } from "./auth-provider";
 
 /**
- * Client-side route guard. It only decides what to *render*; the backend still authorises every
- * request, so bypassing this in devtools exposes no data.
+ * Client-side route guard for the protected area. It always renders `children` (the layout and
+ * page segments) so Next.js can prerender and validate them; each page shows a skeleton via
+ * <RequirePermission> until the session is restored. Anonymous visitors are sent to /login.
+ * The backend still authorises every request, so bypassing this in devtools exposes no data.
  */
 export function RequireAuth({ children }: { children: ReactNode }) {
   const { status, restoreError, retryRestore } = useAuth();
-  const router = useRouter();
+  const router = useLocaleRouter();
   const pathname = usePathname();
 
   useEffect(() => {
     if (status === "anonymous" && !restoreError) {
-      router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+      router.replace(`/login?next=${encodeURIComponent(stripLocale(pathname).path)}`);
     }
   }, [status, restoreError, router, pathname]);
-
-  if (status === "authenticated") return <>{children}</>;
 
   if (status === "anonymous" && restoreError) {
     return (
@@ -37,12 +38,5 @@ export function RequireAuth({ children }: { children: ReactNode }) {
     );
   }
 
-  return (
-    <div className="grid min-h-svh place-items-center" aria-busy="true" aria-live="polite">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Loader2 className="size-4 animate-spin" aria-hidden />
-        Checking your session…
-      </div>
-    </div>
-  );
+  return <>{children}</>;
 }

@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle, Eye, EyeOff, Info, Loader2, LogIn } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { ApiError, errorMessage } from "@/lib/api/errors";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, useLocaleRouter } from "@/lib/i18n";
 import { safeNextPath } from "@/lib/safe-redirect";
 
 // Mirrors backend LoginRequest: username 1–255 chars (username or email), password 1–128.
@@ -26,7 +26,7 @@ type LoginValues = z.infer<typeof loginSchema>;
 export function LoginForm() {
   const { login, status } = useAuth();
   const { isKhmer, t } = useI18n();
-  const router = useRouter();
+  const router = useLocaleRouter();
   const params = useSearchParams();
   const next = safeNextPath(params.get("next"));
   const reasonParam = params.get("reason") ?? "";

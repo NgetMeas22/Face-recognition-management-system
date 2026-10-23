@@ -26,6 +26,10 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   poweredByHeader: false,
+  experimental: {
+    // The root layout is app/[locale]/layout.tsx, so unmatched URLs need a layout-free 404 page.
+    globalNotFound: true,
+  },
   turbopack: {
     rules: {
       "*.css": {

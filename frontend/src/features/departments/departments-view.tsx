@@ -7,7 +7,6 @@ import { useMemo } from "react";
 import { RequirePermission } from "@/components/auth/require-permission";
 import { DataTable, type DataTableFeatures } from "@/components/common/data-table";
 import { PageHeader } from "@/components/common/page-header";
-import { PlannedFeature } from "@/components/common/planned-feature";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
@@ -24,14 +23,14 @@ type DepartmentRow = {
 const NO_ROWS: DepartmentRow[] = [];
 
 export function DepartmentsView() {
-  const { isKhmer, t } = useI18n();
+  const { t } = useI18n();
 
   const columns = useMemo(() => {
     const helper = createColumnHelper<DataTableFeatures, DepartmentRow>();
     return [
       helper.accessor("code", {
         header: t.departments.colCode,
-        cell: (info) => <code className="font-mono text-xs">{info.getValue()}</code>,
+        cell: (info) => <code className="font-mono text-xs font-semibold">{info.getValue()}</code>,
       }),
       helper.accessor("name", {
         header: t.departments.colName,
@@ -64,11 +63,10 @@ export function DepartmentsView() {
   }, [t]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title={t.departments.title}
         description={t.departments.subtitle}
-        availability="planned"
         actions={
           <RequirePermission requires={{ all: [Perm.PEOPLE_WRITE] }} fallback={null}>
             <Button size="sm" disabled className="h-8 gap-1.5 text-xs font-semibold">
@@ -78,29 +76,13 @@ export function DepartmentsView() {
         }
       />
 
-      <div className="space-y-4">
-        <PlannedFeature
-          phase="Phase 3"
-          endpoints={[
-            "GET /departments",
-            "POST /departments",
-            "PATCH /departments/{id}",
-            "DELETE /departments/{id}",
-          ]}
-        >
-          {isKhmer
-            ? "នាយកដ្ឋាន និងថ្នាក់រៀនដែលបានរក្សាទុកក្នុងមូលដ្ឋានទិន្នន័យ នឹងបង្ហាញនៅទីនេះពេល Departments API ត្រូវបានបើកដំណើរការ។"
-            : "Sample departments and classes are seeded in the database and will appear once the Departments API is connected."}
-        </PlannedFeature>
-
-        <DataTable
-          caption={t.departments.title}
-          columns={columns}
-          data={NO_ROWS}
-          searchPlaceholder={t.departments.searchPlaceholder}
-          emptyState={t.departments.emptyDepartments}
-        />
-      </div>
+      <DataTable
+        caption={t.departments.title}
+        columns={columns}
+        data={NO_ROWS}
+        searchPlaceholder={t.departments.searchPlaceholder}
+        emptyState={t.departments.emptyDepartments}
+      />
     </div>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { ScanFace } from "lucide-react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { useAuth } from "@/components/auth/auth-provider";
@@ -16,15 +15,16 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSkeleton,
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { NAV_GROUPS, NAV_ITEMS } from "@/lib/navigation";
-import { useI18n } from "@/lib/i18n";
+import { LocaleLink, stripLocale, useI18n } from "@/lib/i18n";
 
 export function AppSidebar() {
-  const pathname = usePathname();
-  const { allows, user } = useAuth();
+  const pathname = stripLocale(usePathname()).path;
+  const { allows, user, status } = useAuth();
   const { isMobile, setOpenMobile } = useSidebar();
   const { t } = useI18n();
 
@@ -37,7 +37,7 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild tooltip={t.common.appName}>
-              <Link href="/dashboard" className="gap-3 transition-colors">
+              <LocaleLink href="/dashboard" className="gap-3 transition-colors">
                 <span className="flex aspect-square size-9 items-center justify-center rounded-xl bg-primary shadow-sm text-primary-foreground">
                   <ScanFace className="size-5" aria-hidden />
                 </span>
@@ -45,13 +45,22 @@ export function AppSidebar() {
                   <span className="truncate font-semibold tracking-tight">{t.common.appName}</span>
                   <span className="truncate text-xs text-muted-foreground">{t.common.tagline}</span>
                 </span>
-              </Link>
+              </LocaleLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
 
       <SidebarContent className="px-2 py-2">
+        {status !== "authenticated" && (
+          <SidebarMenu className="gap-1 px-1 pt-2" aria-hidden>
+            {Array.from({ length: 7 }, (_, i) => (
+              <SidebarMenuItem key={i}>
+                <SidebarMenuSkeleton showIcon />
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        )}
         {NAV_GROUPS.map((group) => {
           const items = visible.filter((item) => item.group === group.name);
           if (items.length === 0) return null;
@@ -68,7 +77,7 @@ export function AppSidebar() {
                     return (
                       <SidebarMenuItem key={item.href}>
                         <SidebarMenuButton asChild isActive={active} tooltip={localizedTitle} className="h-9 px-2.5">
-                          <Link
+                          <LocaleLink
                             href={item.href}
                             aria-current={active ? "page" : undefined}
                             onClick={() => isMobile && setOpenMobile(false)}
@@ -76,7 +85,7 @@ export function AppSidebar() {
                           >
                             <item.icon className="size-4 shrink-0" aria-hidden />
                             <span className="truncate">{localizedTitle}</span>
-                          </Link>
+                          </LocaleLink>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     );

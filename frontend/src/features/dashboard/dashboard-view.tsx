@@ -12,7 +12,6 @@ import {
   UserX,
   Users,
 } from "lucide-react";
-import Link from "next/link";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 import { useAuth } from "@/components/auth/auth-provider";
@@ -22,12 +21,12 @@ import { QueryError } from "@/components/common/query-error";
 import { StatCard } from "@/components/common/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApiQuery } from "@/hooks/use-api-query";
 import { api } from "@/lib/api/endpoints";
-import { useI18n } from "@/lib/i18n";
+import { LocaleLink, useI18n } from "@/lib/i18n";
 import { Perm } from "@/lib/permissions";
 
 function getGreeting(hour: number, t: ReturnType<typeof useI18n>["t"]): string {
@@ -46,22 +45,19 @@ function RolePermissionsChart() {
 
   return (
     <Card className="border-border/80 shadow-xs">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <div className="space-y-0.5">
-          <CardTitle className="text-sm font-semibold">{t.dashboard.permissionsPerRole}</CardTitle>
-          <CardDescription className="text-xs">Live /api/v1/roles</CardDescription>
-        </div>
+      <CardHeader className="flex flex-row items-center justify-between pb-2 border-b border-border/40">
+        <CardTitle className="text-sm font-semibold">{t.dashboard.permissionsPerRole}</CardTitle>
         <Badge variant="outline" className="text-[10px] font-normal">
           {roles.data?.length ?? 0} roles
         </Badge>
       </CardHeader>
-      <CardContent className="pt-2">
+      <CardContent className="pt-3">
         {roles.error ? (
           <QueryError error={roles.error} onRetry={roles.reload} />
         ) : roles.isLoading && !roles.data ? (
-          <Skeleton className="h-52 w-full rounded-lg" />
+          <Skeleton className="h-48 w-full rounded-lg" />
         ) : (
-          <ChartContainer config={chartConfig} className="h-52 w-full" aria-label="Permissions by role chart">
+          <ChartContainer config={chartConfig} className="h-48 w-full" aria-label="Permissions by role chart">
             <BarChart
               accessibilityLayer
               data={(roles.data ?? []).map((r) => ({ role: r.display_name, permissions: r.permissions.length }))}
@@ -71,7 +67,7 @@ function RolePermissionsChart() {
               <XAxis dataKey="role" tickLine={false} axisLine={false} tickMargin={8} fontSize={11} />
               <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={36} fontSize={11} />
               <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-              <Bar dataKey="permissions" fill="var(--color-permissions)" radius={[4, 4, 0, 0]} maxBarSize={48} />
+              <Bar dataKey="permissions" fill="var(--color-permissions)" radius={[4, 4, 0, 0]} maxBarSize={44} />
             </BarChart>
           </ChartContainer>
         )}
@@ -92,56 +88,53 @@ export function DashboardView() {
   const firstName = user?.full_name ? user.full_name.split(" ")[0] : "";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title={`${greeting}, ${firstName}`}
         description={t.dashboard.subtitle}
-        availability="live"
         actions={
-          <div className="flex items-center gap-2">
-            <Button size="sm" asChild className="h-8 gap-1.5 text-xs font-semibold shadow-xs">
-              <Link href="/scanner">
-                <ScanFace className="size-3.5" aria-hidden />
-                {t.dashboard.startScanning}
-              </Link>
-            </Button>
-          </div>
+          <Button size="sm" asChild className="h-8 gap-1.5 text-xs font-semibold shadow-xs">
+            <LocaleLink href="/scanner">
+              <ScanFace className="size-3.5" aria-hidden />
+              {t.dashboard.openScanner}
+            </LocaleLink>
+          </Button>
         }
       />
 
-      {/* 4 Primary Operational Metric Cards */}
+      {/* 4 Core Metrics */}
       <section aria-label="Core metrics" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title={t.dashboard.totalPeople}
+          title={t.dashboard.employees}
           icon={Users}
           value="—"
-          hint={isKhmer ? "រង់ចាំទិន្នន័យពី People API" : "Awaiting People API"}
+          hint={isKhmer ? "ទិន្នន័យបុគ្គលិក" : "Total personnel"}
           tone="default"
         />
         <StatCard
           title={t.dashboard.presentToday}
           icon={UserCheck}
           value="0"
-          hint={isKhmer ? "គ្មានវត្តមានកត់ត្រានៅឡើយ" : "No attendance recorded yet"}
+          hint={isKhmer ? "វត្តមានថ្ងៃនេះ" : "Checked in today"}
           tone="success"
         />
         <StatCard
           title={t.dashboard.absentToday}
           icon={UserX}
           value="0"
-          hint={isKhmer ? "ផ្អែកលើការកត់ត្រាវត្តមាន" : "Based on daily roster"}
+          hint={isKhmer ? "អវត្តមានថ្ងៃនេះ" : "Expected today"}
           tone="warning"
         />
         <StatCard
-          title={t.dashboard.recentScans}
+          title={t.dashboard.scansToday}
           icon={ScanFace}
           value="0"
-          hint={isKhmer ? "ព្រឹត្តិការណ៍ស្កេនថ្ងៃនេះ" : "Events scanned today"}
+          hint={isKhmer ? "ការស្កេនថ្ងៃនេះ" : "Total scans"}
           tone="default"
         />
       </section>
 
-      {/* System Telemetry & Access Summary */}
+      {/* System Telemetry Row */}
       <section aria-label="System status" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title={t.dashboard.apiStatus}
@@ -151,9 +144,9 @@ export function DashboardView() {
           value={health.error ? t.common.offline : t.common.online}
           hint={
             health.data
-              ? `v${health.data.version} · ${health.data.environment}`
+              ? `v${health.data.version}`
               : health.error
-              ? "GET /health error"
+              ? "Service unavailable"
               : undefined
           }
         />
@@ -163,13 +156,7 @@ export function DashboardView() {
           isLoading={ready.isLoading && !ready.data}
           tone={readyState === "ok" ? "success" : readyState === "degraded" ? "warning" : "danger"}
           value={ready.data?.database === "ok" ? t.common.connected : t.common.unavailable}
-          hint={
-            ready.data
-              ? ready.data.migrations === "up_to_date"
-                ? `${t.dashboard.upToDate} · ${ready.data.current_revision ?? "rev"}`
-                : `Migrations: ${ready.data.migrations}`
-              : undefined
-          }
+          hint={ready.data?.current_revision ? `Rev: ${ready.data.current_revision}` : undefined}
         />
         <StatCard
           title={t.dashboard.yourRole}
@@ -182,26 +169,23 @@ export function DashboardView() {
           title={t.dashboard.yourPermissions}
           icon={KeyRound}
           value={user?.permissions.length ?? 0}
-          hint={isKhmer ? "សិទ្ធិអនុញ្ញាតសរុប" : "Total granted permissions"}
+          hint={isKhmer ? "សិទ្ធិអនុញ្ញាត" : "Granted permissions"}
           tone="default"
         />
       </section>
 
-      {/* Main Grid: Visual Chart & Recent Activity */}
+      {/* Chart & Activity Cards */}
       <div className="grid gap-4 lg:grid-cols-2">
         <RequirePermission
           requires={{ all: [Perm.ROLES_MANAGE] }}
           fallback={
             <Card className="border-border/80 shadow-xs">
-              <CardHeader>
+              <CardHeader className="pb-2 border-b border-border/40">
                 <CardTitle className="text-sm font-semibold">{t.dashboard.permissionsPerRole}</CardTitle>
-                <CardDescription className="text-xs">
-                  {isKhmer ? "អាចមើលឃើញបានសម្រាប់អ្នកគ្រប់គ្រង" : "Visible to administrators (roles.manage)."}
-                </CardDescription>
               </CardHeader>
-              <CardContent className="h-52 flex items-center justify-center text-xs text-muted-foreground">
-                <ShieldCheck className="size-6 mr-2 opacity-50" />
-                {isKhmer ? "តម្រូវឱ្យមានសិទ្ធិអ្នកគ្រប់គ្រង" : "Requires administrative role"}
+              <CardContent className="h-48 flex items-center justify-center text-xs text-muted-foreground">
+                <ShieldCheck className="size-5 mr-2 opacity-50" />
+                {isKhmer ? "តម្រូវឱ្យមានសិទ្ធិអ្នកគ្រប់គ្រង" : "Administrator role required"}
               </CardContent>
             </Card>
           }
@@ -209,57 +193,43 @@ export function DashboardView() {
           <RolePermissionsChart />
         </RequirePermission>
 
-        {/* Compact Recent Activity Card */}
         <Card className="border-border/80 shadow-xs flex flex-col">
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <div className="space-y-0.5">
-              <CardTitle className="text-sm font-semibold">{t.dashboard.recentActivity}</CardTitle>
-              <CardDescription className="text-xs">
-                {isKhmer ? "ការស្កេន និងសកម្មភាពកត់ត្រាថ្ងៃនេះ" : "Live scan and attendance timeline"}
-              </CardDescription>
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 border-b border-border/40">
+            <CardTitle className="text-sm font-semibold">{t.dashboard.recentActivity}</CardTitle>
             <Button variant="ghost" size="sm" asChild className="h-7 text-xs px-2 gap-1">
-              <Link href="/scans">
+              <LocaleLink href="/scans">
                 {t.common.details}
                 <ArrowRight className="size-3" />
-              </Link>
+              </LocaleLink>
             </Button>
           </CardHeader>
-          <CardContent className="flex-1 flex flex-col justify-center">
-            <div className="rounded-lg border border-dashed border-border/80 p-6 text-center">
-              <ScanFace className="size-8 mx-auto text-muted-foreground/40 mb-2" />
-              <p className="text-xs font-medium text-foreground">{t.dashboard.noActivity}</p>
-              <p className="text-[11px] text-muted-foreground mt-1 max-w-xs mx-auto">
-                {t.dashboard.awaitingEvents}
-              </p>
-              <Button size="sm" variant="outline" asChild className="mt-3 h-7 text-xs font-medium">
-                <Link href="/scanner">{t.dashboard.startScanning}</Link>
+          <CardContent className="flex-1 flex flex-col justify-center pt-4">
+            <div className="rounded-lg border border-dashed border-border/80 p-5 text-center">
+              <ScanFace className="size-7 mx-auto text-muted-foreground/30 mb-1.5" />
+              <p className="text-xs font-semibold text-foreground">{t.dashboard.noActivity}</p>
+              <Button size="sm" variant="outline" asChild className="mt-2.5 h-7 text-xs font-medium">
+                <LocaleLink href="/scanner">{t.dashboard.openScanner}</LocaleLink>
               </Button>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Permissions Breakdown and Quick Access */}
+      {/* Access Permissions Badges */}
       <Card className="border-border/80 shadow-xs">
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-2.5 border-b border-border/40">
           <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <CardTitle className="text-sm font-semibold">{t.dashboard.yourAccess}</CardTitle>
-              <CardDescription className="text-xs">
-                {isKhmer ? "សិទ្ធិអនុញ្ញាតដែលបានផ្តល់ជូនគណនីរបស់អ្នក" : "Permissions granted to your active session"}
-              </CardDescription>
-            </div>
+            <CardTitle className="text-sm font-semibold">{t.dashboard.yourAccess}</CardTitle>
             <Badge variant="secondary" className="font-mono text-xs">
               {user?.permissions.length ?? 0} {t.dashboard.yourPermissions.toLowerCase()}
             </Badge>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-3">
           <ul className="flex flex-wrap gap-1.5" aria-label="Granted permissions">
             {user?.permissions.map((p) => (
               <li key={p}>
-                <Badge variant="outline" className="font-mono text-[11px] bg-muted/30 border-border/60 py-0.5">
+                <Badge variant="outline" className="font-mono text-[11px] bg-muted/20 border-border/60 py-0.5">
                   <CheckCircle2 className="size-3 mr-1 text-success shrink-0" />
                   {p}
                 </Badge>

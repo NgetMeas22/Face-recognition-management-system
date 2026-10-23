@@ -7,7 +7,6 @@ import { useMemo } from "react";
 import { RequirePermission } from "@/components/auth/require-permission";
 import { DataTable, type DataTableFeatures } from "@/components/common/data-table";
 import { PageHeader } from "@/components/common/page-header";
-import { PlannedFeature } from "@/components/common/planned-feature";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
@@ -24,7 +23,7 @@ type AttendanceRow = {
 const NO_ROWS: AttendanceRow[] = [];
 
 export function AttendanceView() {
-  const { isKhmer, t } = useI18n();
+  const { t } = useI18n();
 
   const columns = useMemo(() => {
     const helper = createColumnHelper<DataTableFeatures, AttendanceRow>();
@@ -76,11 +75,10 @@ export function AttendanceView() {
   }, [t]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title={t.attendance.title}
         description={t.attendance.subtitle}
-        availability="planned"
         actions={
           <div className="flex items-center gap-2">
             <RequirePermission requires={{ all: [Perm.ATTENDANCE_WRITE] }} fallback={null}>
@@ -97,29 +95,13 @@ export function AttendanceView() {
         }
       />
 
-      <div className="space-y-4">
-        <PlannedFeature
-          phase="Phase 6"
-          endpoints={[
-            "GET /attendance",
-            "POST /attendance/manual",
-            "POST /attendance/{id}/void",
-            "POST /attendance/{id}/correct",
-          ]}
-        >
-          {isKhmer
-            ? "កំណត់ត្រាវត្តមាននឹងបង្ហាញនៅទីនេះពេលភ្ជាប់ជាមួយ Attendance API។"
-            : "Live attendance records and manual entries will populate once the Attendance service is enabled."}
-        </PlannedFeature>
-
-        <DataTable
-          caption={t.attendance.title}
-          columns={columns}
-          data={NO_ROWS}
-          searchPlaceholder={t.attendance.searchPlaceholder}
-          emptyState={t.attendance.emptyAttendance}
-        />
-      </div>
+      <DataTable
+        caption={t.attendance.title}
+        columns={columns}
+        data={NO_ROWS}
+        searchPlaceholder={t.attendance.searchPlaceholder}
+        emptyState={t.attendance.emptyAttendance}
+      />
     </div>
   );
 }
